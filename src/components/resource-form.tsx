@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Send, ChevronDown, ChevronUp } from 'lucide-react';
 import { OperationObject, SchemaObject } from '@/lib/types';
 import { useSpecStore } from '@/store/spec-store';
+import { resolveSchema } from '@/lib/schema-resolver';
 import { toast } from 'sonner';
 import { cn, extractPathParamNames } from '@/lib/utils';
 
@@ -108,9 +109,11 @@ export function ResourceForm({ path, method, operation, pathParams = {}, onSucce
   const [response, setResponse] = useState<unknown>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showResponse, setShowResponse] = useState(false);
-  const { getActiveEnvironment } = useSpecStore();
+  const { getActiveEnvironment, parsedSpec } = useSpecStore();
 
-  const schema = getSchema(operation);
+  const rawSchema = getSchema(operation);
+  const components = parsedSpec?.raw.components;
+  const schema = rawSchema ? resolveSchema(rawSchema, components) : null;
   const properties = schema?.properties ?? {};
   const required = schema?.required ?? [];
 
