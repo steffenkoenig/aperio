@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowUpDown, Loader2, RefreshCw, Search } from 'lucide-react';
 import { useSpecStore } from '@/store/spec-store';
 import { OperationObject } from '@/lib/types';
+import { extractPathParamNames } from '@/lib/utils';
 import { toast } from 'sonner';
 
 interface ResourceTableProps {
@@ -66,6 +67,10 @@ export function ResourceTable({ path, operation, pathParams = {} }: ResourceTabl
 
   const resolvedPath = path.replace(/\{([^}]+)\}/g, (_, key: string) => pathParams[key] ?? `:${key}`);
 
+  // Detect any path params that haven't been filled in yet
+  const pathParamNames = extractPathParamNames(path);
+  const missingParams = pathParamNames.filter((name) => !pathParams[name]);
+
   const fetchData = async () => {
     const env = getActiveEnvironment();
     if (!env?.baseUrl) {
@@ -114,9 +119,15 @@ export function ResourceTable({ path, operation, pathParams = {} }: ResourceTabl
   };
 
   useEffect(() => {
-    void fetchData();
+    if (missingParams.length === 0) {
+      void fetchData();
+    }
+    // `fetchData` is re-created each render but relies on `resolvedPath`, `getActiveEnvironment`,
+    // and auth config. We intentionally use `resolvedPath` as the sole trigger so the table
+    // re-fetches whenever path params change, while `getActiveEnvironment` is always called
+    // at fetch time and therefore does not need to be listed.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [path]);
+  }, [resolvedPath]);
 
   const columns = inferColumns(data);
 
@@ -130,6 +141,19 @@ export function ResourceTable({ path, operation, pathParams = {} }: ResourceTabl
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
   });
+
+  if (missingParams.length > 0) {
+    return (
+      <div className="rounded-lg border border-muted bg-muted/20 p-6 text-center">
+        <p className="text-sm text-muted-foreground">
+          Configure the required path parameters above to fetch data.
+        </p>
+        <p className="text-xs text-muted-foreground mt-1 font-mono">
+          Missing: {missingParams.map((p) => `{${p}}`).join(', ')}
+        </p>
+      </div>
+    );
+  }
 
   if (error) {
     return (

@@ -8,7 +8,7 @@ import { Loader2, Send, ChevronDown, ChevronUp } from 'lucide-react';
 import { OperationObject, SchemaObject } from '@/lib/types';
 import { useSpecStore } from '@/store/spec-store';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { cn, extractPathParamNames } from '@/lib/utils';
 
 interface ResourceFormProps {
   path: string;
@@ -116,6 +116,10 @@ export function ResourceForm({ path, method, operation, pathParams = {}, onSucce
 
   const resolvedPath = path.replace(/\{([^}]+)\}/g, (_, key: string) => pathParams[key] ?? `:${key}`);
 
+  // Detect missing path parameters to disable submit and warn the user
+  const pathParamNames = extractPathParamNames(path);
+  const missingParams = pathParamNames.filter((name) => !pathParams[name]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const env = getActiveEnvironment();
@@ -191,10 +195,16 @@ export function ResourceForm({ path, method, operation, pathParams = {}, onSucce
             <p className="text-sm text-muted-foreground italic">No request body required</p>
           )}
 
+          {missingParams.length > 0 && (
+            <p className="text-xs text-destructive">
+              Missing path parameters: {missingParams.map((p) => `{${p}}`).join(', ')} — configure them above.
+            </p>
+          )}
+
           <div className="flex gap-2 pt-2">
             <Button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || missingParams.length > 0}
               size="sm"
               className={cn(method.toLowerCase() === 'delete' && 'bg-destructive hover:bg-destructive/90')}
             >

@@ -5,10 +5,11 @@ import { useSpecStore } from '@/store/spec-store';
 import { ResourceTable } from '@/components/resource-table';
 import { ResourceForm } from '@/components/resource-form';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ResourceNode, OperationObject } from '@/lib/types';
-import { pathToSlug } from '@/lib/utils';
-import { Database, Zap, Box } from 'lucide-react';
+import { pathToSlug, extractPathParamNames } from '@/lib/utils';
+import { Database, Zap, Box, KeyRound } from 'lucide-react';
 
 function findNodeBySlug(nodes: ResourceNode[], slug: string): ResourceNode | null {
   for (const node of nodes) {
@@ -35,7 +36,7 @@ interface PageProps {
 export default function ResourcePage({ params }: PageProps) {
   const { slug } = use(params);
   const decodedSlug = decodeURIComponent(slug);
-  const { parsedSpec } = useSpecStore();
+  const { parsedSpec, pathParams, setPathParam } = useSpecStore();
 
   if (!parsedSpec) return null;
 
@@ -49,6 +50,11 @@ export default function ResourcePage({ params }: PageProps) {
       </div>
     );
   }
+
+  const pathParamNames = extractPathParamNames(node.path);
+  // A top-level node has no parent in the resource tree
+  const isTopLevel = parsedSpec.resourceTree.some((n) => n.id === node.id);
+  const missingParams = pathParamNames.filter((name) => !pathParams[name]);
 
   const typeIcon = node.type === 'action' ? Zap : node.type === 'root-resource' ? Database : Box;
   const TypeIcon = typeIcon;
@@ -82,6 +88,46 @@ export default function ResourcePage({ params }: PageProps) {
         )}
       </div>
 
+      {/* Path Parameters Editor */}
+      {pathParamNames.length > 0 && (
+        <div className="mb-6 rounded-lg border bg-muted/20 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <KeyRound className="h-4 w-4 text-muted-foreground" />
+            <h2 className="text-sm font-semibold">Path Parameters</h2>
+            {isTopLevel && missingParams.length > 0 && (
+              <Badge variant="destructive" className="text-xs">Required</Badge>
+            )}
+            {!isTopLevel && (
+              <Badge variant="secondary" className="text-xs">Inherited from parent</Badge>
+            )}
+          </div>
+          {isTopLevel && missingParams.length > 0 && (
+            <p className="text-xs text-muted-foreground mb-3">
+              This resource requires path parameters to be configured before data can be fetched.
+            </p>
+          )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {pathParamNames.map((name) => (
+              <div key={name} className="space-y-1">
+                <label htmlFor={`path-param-${name}`} className="text-xs font-medium flex items-center gap-1.5">
+                  <code className="bg-muted px-1 py-0.5 rounded text-[11px]">{`{${name}}`}</code>
+                  {!isTopLevel && pathParams[name] && (
+                    <span className="text-[10px] text-muted-foreground">(from parent)</span>
+                  )}
+                </label>
+                <Input
+                  id={`path-param-${name}`}
+                  value={pathParams[name] ?? ''}
+                  onChange={(e) => setPathParam(name, e.target.value)}
+                  placeholder={`Enter value for ${name}…`}
+                  className="h-8 text-sm font-mono"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <Tabs defaultValue={defaultTab}>
         <TabsList className="mb-4">
           {hasList && <TabsTrigger value="list">List / Fetch</TabsTrigger>}
@@ -99,6 +145,7 @@ export default function ResourcePage({ params }: PageProps) {
             <ResourceTable
               path={node.path}
               operation={node.operations['get'] as OperationObject}
+              pathParams={pathParams}
             />
           </TabsContent>
         )}
@@ -109,6 +156,7 @@ export default function ResourcePage({ params }: PageProps) {
               path={node.path}
               method={m}
               operation={node.operations[m] as OperationObject}
+              pathParams={pathParams}
             />
           </TabsContent>
         ))}

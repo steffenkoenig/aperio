@@ -9,3 +9,8 @@ export function cn(...inputs: ClassValue[]) {
 export function pathToSlug(path: string): string {
   return path.replace(/\//g, '_').replace(/[{}]/g, '').replace(/^_/, '');
 }
+
+/** Extract path parameter names from an OpenAPI path template, e.g. `/users/{id}` → `['id']` */
+export function extractPathParamNames(path: string): string[] {
+  return [...path.matchAll(/\{([^}]+)\}/g)].map((m) => m[1]);
+}

@@ -9,6 +9,7 @@ interface SpecStore {
   specSource: string | null;
   environments: AppEnvironment[];
   activeEnvironmentId: string | null;
+  pathParams: Record<string, string>;
   setParsedSpec: (spec: ParsedSpec, source: string) => void;
   clearSpec: () => void;
   addEnvironment: (env: AppEnvironment) => void;
@@ -16,6 +17,8 @@ interface SpecStore {
   removeEnvironment: (id: string) => void;
   setActiveEnvironment: (id: string) => void;
   getActiveEnvironment: () => AppEnvironment | null;
+  setPathParam: (name: string, value: string) => void;
+  clearPathParams: () => void;
 }
 
 export const useSpecStore = create<SpecStore>()(
@@ -32,6 +35,7 @@ export const useSpecStore = create<SpecStore>()(
         },
       ],
       activeEnvironmentId: 'default',
+      pathParams: {},
 
       setParsedSpec: (spec, source) => {
         const baseUrl = spec.baseUrl ?? '';
@@ -49,6 +53,11 @@ export const useSpecStore = create<SpecStore>()(
       },
 
       clearSpec: () => set({ parsedSpec: null, specSource: null }),
+
+      setPathParam: (name, value) =>
+        set((state) => ({ pathParams: { ...state.pathParams, [name]: value } })),
+
+      clearPathParams: () => set({ pathParams: {} }),
 
       addEnvironment: (env) =>
         set((state) => ({ environments: [...state.environments, env] })),
