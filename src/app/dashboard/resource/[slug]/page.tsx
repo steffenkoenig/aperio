@@ -7,11 +7,12 @@ import { ResourceForm } from '@/components/resource-form';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ResourceNode, OperationObject } from '@/lib/types';
+import { pathToSlug } from '@/lib/utils';
 import { Database, Zap, Box } from 'lucide-react';
 
 function findNodeBySlug(nodes: ResourceNode[], slug: string): ResourceNode | null {
   for (const node of nodes) {
-    const nodeSlug = node.path.replace(/\//g, '_').replace(/[{}]/g, '').replace(/^_/, '');
+    const nodeSlug = pathToSlug(node.path);
     if (nodeSlug === slug) return node;
     const found = findNodeBySlug(node.children, slug);
     if (found) return found;
@@ -118,7 +119,7 @@ export default function ResourcePage({ params }: PageProps) {
               {node.children.map((child) => (
                 <a
                   key={child.id}
-                  href={`/dashboard/resource/${encodeURIComponent(child.path.replace(/\//g, '_').replace(/[{}]/g, '').replace(/^_/, ''))}`}
+                  href={`/dashboard/resource/${encodeURIComponent(pathToSlug(child.path))}`}
                   className="flex items-center justify-between p-3 rounded-lg border hover:border-primary/30 hover:bg-muted/30 transition-colors"
                 >
                   <div>

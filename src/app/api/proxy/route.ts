@@ -23,7 +23,8 @@ export async function POST(req: NextRequest) {
       },
     };
 
-    if (requestBody !== undefined && method.toUpperCase() !== 'GET' && method.toUpperCase() !== 'DELETE') {
+    const upperMethod = method.toUpperCase();
+    if (requestBody !== undefined && upperMethod !== 'GET' && upperMethod !== 'DELETE') {
       fetchOptions.body = JSON.stringify(requestBody);
     }
 

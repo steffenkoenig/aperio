@@ -132,7 +132,7 @@ export function ResourceForm({ path, method, operation, pathParams = {}, onSucce
       } else if (env.authType === 'apiKey' && env.authValue) {
         headers[env.authHeader ?? 'X-API-Key'] = env.authValue;
       } else if (env.authType === 'basic' && env.authValue) {
-        headers['Authorization'] = `Basic ${btoa(env.authValue)}`;
+        headers['Authorization'] = `Basic ${Buffer.from(env.authValue).toString('base64')}`;
       }
 
       const res = await fetch('/api/proxy', {

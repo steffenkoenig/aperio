@@ -19,8 +19,7 @@ function classifyPath(path: string, methods: string[]): PathType {
   // Has a parent param and last segment is not a param -> sub-resource or action
   if (hasParentParam && !isLastParam) {
     // If only POST method and likely an action (reboot, start, stop, etc.)
-    const actionVerbs = ACTION_VERBS;
-    if (methods.length === 1 && methods[0] === 'post' && actionVerbs.some(v => lastSegment?.toLowerCase().includes(v))) {
+    if (methods.length === 1 && methods[0] === 'post' && ACTION_VERBS.some(v => lastSegment?.toLowerCase().includes(v))) {
       return 'action';
     }
     return 'sub-resource';
