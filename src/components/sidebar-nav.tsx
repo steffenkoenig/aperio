@@ -65,9 +65,9 @@ function NavItem({ node, depth }: NavItemProps) {
             className="flex-shrink-0 p-0.5 rounded hover:bg-accent-foreground/10"
           >
             {expanded ? (
-              <Folder className="h-3.5 w-3.5" />
-            ) : (
               <FolderOpen className="h-3.5 w-3.5" />
+            ) : (
+              <Folder className="h-3.5 w-3.5" />
             )}
           </button>
         ) : (

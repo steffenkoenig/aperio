@@ -1,5 +1,7 @@
 import { ResourceNode, PathItemObject, PathType, OperationObject } from './types';
 
+const ACTION_VERBS = ['reboot', 'start', 'stop', 'restart', 'enable', 'disable', 'activate', 'deactivate', 'cancel', 'approve', 'reject', 'publish', 'unpublish', 'archive', 'restore', 'reset', 'verify', 'send', 'resend'];
+
 function classifyPath(path: string, methods: string[]): PathType {
   const segments = path.split('/').filter(Boolean);
   if (segments.length === 0) return 'singleton';
@@ -17,7 +19,7 @@ function classifyPath(path: string, methods: string[]): PathType {
   // Has a parent param and last segment is not a param -> sub-resource or action
   if (hasParentParam && !isLastParam) {
     // If only POST method and likely an action (reboot, start, stop, etc.)
-    const actionVerbs = ['reboot', 'start', 'stop', 'restart', 'enable', 'disable', 'activate', 'deactivate', 'cancel', 'approve', 'reject', 'publish', 'unpublish', 'archive', 'restore', 'reset', 'verify', 'send', 'resend'];
+    const actionVerbs = ACTION_VERBS;
     if (methods.length === 1 && methods[0] === 'post' && actionVerbs.some(v => lastSegment?.toLowerCase().includes(v))) {
       return 'action';
     }
