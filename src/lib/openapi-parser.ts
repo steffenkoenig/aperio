@@ -1,4 +1,4 @@
-import { ParsedSpec, OpenApiSpec, ResourceNode } from './types';
+import { ParsedSpec, OpenApiSpec } from './types';
 import { buildResourceTree } from './path-intelligence';
 
 export async function parseOpenApiSpec(input: string | object): Promise<ParsedSpec> {

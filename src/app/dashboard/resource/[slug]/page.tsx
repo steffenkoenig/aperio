@@ -144,7 +144,6 @@ export default function ResourcePage({ params }: PageProps) {
           <TabsContent value="list">
             <ResourceTable
               path={node.path}
-              operation={node.operations['get'] as OperationObject}
               pathParams={pathParams}
             />
           </TabsContent>
