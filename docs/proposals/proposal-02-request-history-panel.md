@@ -8,7 +8,7 @@ When a user interacts with the generated Admin UI and an API request fails or be
 
 ## Proposed Changes
 1. **History State Store:** Create a new Zustand slice or dedicated store (`src/store/history-store.ts`) to keep a transient log of recent requests and responses.
-2. **Proxy Interception:** Update the internal Next.js API proxy (`src/app/api/proxy/route.ts`) to echo back detailed metadata about the outgoing request (exact URL, headers sent, payload) alongside the response.
+2. **Proxy Interception:** Update the internal Next.js API proxy (src/app/api/proxy/route.ts) to return detailed metadata about the outgoing request (exact URL, headers sent, payload) via custom response headers (e.g., X-Aperio-Metadata as a base64-encoded JSON string) to avoid corrupting non-JSON or raw JSON response payloads.
 3. **Debugging Panel UI:** Create a collapsible drawer or a dedicated "History" tab in the UI.
 4. **Log Details View:** Within the panel, clicking a log entry will open a detailed JSON tree view (using an existing library like `@uiw/react-json-view` or similar) showing Request Headers, Request Body, Response Headers, Response Body, and Timing.
 

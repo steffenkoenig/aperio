@@ -12,12 +12,12 @@ Currently, Aperio requires users to repeatedly upload OpenAPI specs or configure
    - Environment variables (Base URL, specific custom headers like `Authorization`).
 2. **Environment Switcher UI:** Add a dropdown component to the application header allowing users to quickly swap between their saved Workspaces.
 3. **Workspace Configuration Panel:** Create a settings modal to create, edit, duplicate, and delete Workspaces.
-4. **Local Persistence Strategy:** Ensure all workspace data is exclusively saved to the browser's `localStorage`. No data will be sent to any external or backend servers.
+4. **Local Persistence Strategy:** Ensure all workspace data is exclusively saved to the browser's local storage (using IndexedDB or localforage for large OpenAPI specs to avoid localStorage quota limits and prevent UI-blocking serialization). No data will be sent to any external or backend servers.
 
 ## Definition of Done
 - Users can create, update, and delete multiple Workspaces.
 - Users can switch between Workspaces via a UI dropdown.
-- Zustand store persists the active and inactive workspaces into `localStorage`.
+- Zustand store persists workspace configurations using IndexedDB or localforage for large spec payloads, and localStorage for lightweight metadata.
 - Changing a Workspace instantly updates the active API specification, Base URL, and headers used by the proxy.
 - Comprehensive unit and integration tests are written and passing.
 - User documentation is updated to explain how to use Workspaces.

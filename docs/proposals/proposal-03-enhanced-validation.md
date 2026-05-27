@@ -9,7 +9,7 @@ Currently, Aperio generates UI forms based on OpenAPI specs, but advanced valida
 ## Proposed Changes
 1. **Ajv Integration Upgrade:** Leverage `@rjsf/validator-ajv8` alongside the React JSON Schema Form to enforce strict schema validation. Ensure that custom error messages are mapped nicely to the UI.
 2. **Custom File Widget:** Create a custom Radix UI-based file upload widget (`FileWidget`) that supports drag-and-drop, multiple files, and size previews.
-3. **Proxy Multipart Support:** Update the `src/app/api/proxy/route.ts` to detect when a payload is `multipart/form-data`. Ensure that the Node.js boundary streams are correctly handled and passed through to the destination API without corrupting binary data.
+3. **Proxy Multipart Support:** Update the src/app/api/proxy/route.ts to detect when a payload is multipart/form-data. Since multipart requests cannot be wrapped in a JSON body, pass the target URL and method via custom request headers (e.g., X-Proxy-Target-URL, X-Proxy-Target-Method), and stream the multipart body directly to the destination API.
 4. **Client-Side Form State Enhancement:** Add immediate visual feedback (e.g., green checkmarks, red text) for field-level validation as the user types, rather than waiting for form submission.
 
 ## Definition of Done
