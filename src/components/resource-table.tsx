@@ -16,7 +16,6 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ArrowUpDown, Loader2, RefreshCw, Search, ChevronDown, ChevronUp } from 'lucide-react';
 import { useSpecStore } from '@/store/spec-store';
-import { OperationObject } from '@/lib/types';
 import { extractPathParamNames } from '@/lib/utils';
 import { toast } from 'sonner';
 

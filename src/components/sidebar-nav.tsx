@@ -33,6 +33,10 @@ function getMethodBadgeVariant(method: string): 'default' | 'secondary' | 'destr
   }
 }
 
+function NodeIcon({ node, className }: { node: ResourceNode; className?: string }) {
+  return React.createElement(getNodeIcon(node), { className });
+}
+
 interface NavItemProps {
   node: ResourceNode;
   depth: number;
@@ -42,7 +46,6 @@ function NavItem({ node, depth }: NavItemProps) {
   const pathname = usePathname();
   const [expanded, setExpanded] = useState(true);
   const hasChildren = node.children.length > 0;
-  const Icon = getNodeIcon(node);
   const nodeHref = `/dashboard/resource/${encodeURIComponent(pathToSlug(node.path))}`;
   const isActive = pathname === nodeHref;
 
@@ -71,7 +74,7 @@ function NavItem({ node, depth }: NavItemProps) {
             )}
           </button>
         ) : (
-          <Icon className="h-3.5 w-3.5 flex-shrink-0" />
+          <NodeIcon node={node} className="h-3.5 w-3.5 flex-shrink-0" />
         )}
         <Link href={nodeHref} className="flex-1 truncate">
           {node.name}

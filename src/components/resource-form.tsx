@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Send, ChevronDown, ChevronUp, ChevronRight, Plus, Trash2 } from 'lucide-react';
-import { OperationObject, SchemaObject } from '@/lib/types';
+import { OperationObject, SchemaObject, OpenApiSpec } from '@/lib/types';
 import { useSpecStore } from '@/store/spec-store';
 import { resolveSchema } from '@/lib/schema-resolver';
 import { toast } from 'sonner';
@@ -36,7 +36,7 @@ interface FormFieldProps {
   value: unknown;
   onChange: (val: unknown) => void;
   required: boolean;
-  components: any;
+  components: OpenApiSpec['components'];
 }
 
 export function FormField({ name, schema, value, onChange, required, components }: FormFieldProps) {
