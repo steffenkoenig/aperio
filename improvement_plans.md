@@ -58,15 +58,15 @@ When users execute operations (especially complex POST/PUT requests) through the
 - All requests made via the proxy or directly are captured and listed chronologically.
 - Clicking an entry expands to show formatted request and response details.
 - The Replay button successfully resends the request and adds a new entry to the history.
-- History is capped at the last 100 requests to prevent local storage bloat.
+- History is capped at the last 100 requests (stored in IndexedDB, or local storage with a strict try-catch wrapper and size-based eviction) to avoid browser quota limits.
 
 ### Technical & Compliance Considerations
 - **Documentation:** Document the Request History feature and its limitations (e.g., maximum stored requests) in the user guide.
-- **Testing:** Write component tests for the history panel UI and unit tests for the local storage persistence logic. Verify that sensitive headers (like Authorization) are handled securely.
+- **Testing:** Write component tests for the history panel UI and unit tests for the persistence logic. Verify that sensitive headers (like Authorization) are handled securely.
 - **Security:** Do not log or persist sensitive authentication tokens (e.g., Bearer tokens, Basic Auth passwords) in the request history view or local storage. Mask these fields to prevent unauthorized access if a user shares their screen.
-- **Reliability:** Implement efficient logging that does not block the main UI thread during heavy API activity.
+- **Reliability:** Implement efficient logging that does not block the main UI thread during heavy API activity. Wrap localStorage writes in try-catch blocks to handle browser storage quota limits gracefully, and prefer IndexedDB for storing response bodies.
 - **Accessibility:** Use screen-reader-friendly text for request statuses and ensure the slide-out panel manages focus correctly.
-- **GDPR Compliance:** The request history is stored strictly in local storage on the user's device. No data is sent to external tracking servers.
+- **GDPR Compliance:** The request history is stored strictly on the user's device. No data is sent to external tracking servers.
 
 ### Future Press Release
 **Never Lose Track of an API Call with Aperio's Request History**
