@@ -84,5 +84,28 @@ export function resolveSchema(
     result = { ...result, properties: resolvedProps };
   }
 
+
+
+
+
+  // Recursively resolve nested items (arrays)
+  if (result.items) {
+    if (Array.isArray(result.items)) {
+       result = {
+         ...result,
+         items: (result.items as SchemaObject[]).map(item => resolveSchema(item, components, new Set(visited))) as unknown as SchemaObject
+       };
+    } else {
+       result = {
+         ...result,
+         items: resolveSchema(result.items as SchemaObject, components, new Set(visited))
+       };
+    }
+  }
+
   return result;
+
+
+
+
 }
