@@ -226,9 +226,11 @@ export function ResourceForm({ path, method, operation, pathParams = {}, onSucce
                   return;
                 }
 
-                const headers: Record<string, string> = {
-                  'Content-Type': 'application/json',
-                };
+                const headers: Record<string, string> = {};
+                const hasBody = Object.keys(formData).length > 0;
+                if (hasBody) {
+                  headers['Content-Type'] = 'application/json';
+                }
 
                 if (env.authType === 'bearer' && env.authValue) {
                   headers['Authorization'] = `Bearer ${env.authValue}`;
@@ -243,11 +245,18 @@ export function ResourceForm({ path, method, operation, pathParams = {}, onSucce
                   headers,
                 };
 
-                if (Object.keys(formData).length > 0) {
-                  options.body = JSON.stringify(formData, null, 2);
+                let bodyStr = '';
+                if (hasBody) {
+                  bodyStr = JSON.stringify(formData, null, 2);
+                  options.body = bodyStr;
                 }
 
-                const fetchCode = `fetch('${env.baseUrl}${resolvedPath}', {\n  method: '${options.method}',\n  headers: ${JSON.stringify(options.headers, null, 2).replace(/\n/g, '\n  ')}${options.body ? `,\n  body: JSON.stringify(${options.body.replace(/\n/g, '\n  ')})` : ''}\n});`;
+                const fetchCode = `fetch('${env.baseUrl}${resolvedPath}', {\n  method: '${options.method}',\n  headers: ${JSON.stringify(options.headers, null, 2).replace(/\n/g, '\n  ')}${bodyStr ? `,\n  body: JSON.stringify(${bodyStr.replace(/\n/g, '\n  ')})` : ''}\n});`;
+
+                if (!navigator.clipboard) {
+                  toast.error('Clipboard API not available in this browser/context');
+                  return;
+                }
 
                 navigator.clipboard.writeText(fetchCode).then(() => {
                   toast.success('Fetch code copied to clipboard');
