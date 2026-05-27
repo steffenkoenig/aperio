@@ -22,7 +22,6 @@ import { toast } from 'sonner';
 
 interface ResourceTableProps {
   path: string;
-  operation: OperationObject;
   pathParams?: Record<string, string>;
 }
 
