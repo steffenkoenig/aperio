@@ -84,5 +84,10 @@ export function resolveSchema(
     result = { ...result, properties: resolvedProps };
   }
 
+  // Recursively resolve array items.
+  if (result.items) {
+    result.items = resolveSchema(result.items, components, new Set(visited));
+  }
+
   return result;
 }
