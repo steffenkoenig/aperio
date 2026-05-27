@@ -42,6 +42,7 @@ function NavItem({ node, depth }: NavItemProps) {
   const pathname = usePathname();
   const [expanded, setExpanded] = useState(true);
   const hasChildren = node.children.length > 0;
+  const Icon = getNodeIcon(node);
   const nodeHref = `/dashboard/resource/${encodeURIComponent(pathToSlug(node.path))}`;
   const isActive = pathname === nodeHref;
 
@@ -70,7 +71,7 @@ function NavItem({ node, depth }: NavItemProps) {
             )}
           </button>
         ) : (
-          React.createElement(getNodeIcon(node), { className: "h-3.5 w-3.5 flex-shrink-0" })
+          <Icon className="h-3.5 w-3.5 flex-shrink-0" />
         )}
         <Link href={nodeHref} className="flex-1 truncate">
           {node.name}
