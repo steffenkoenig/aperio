@@ -57,7 +57,7 @@ function inferColumns(data: Record<string, unknown>[]) {
   );
 }
 
-export function ResourceTable({ path, operation, pathParams = {} }: ResourceTableProps) {
+export function ResourceTable({ path, pathParams = {} }: ResourceTableProps) {
   const [data, setData] = useState<Record<string, unknown>[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [sorting, setSorting] = useState<SortingState>([]);

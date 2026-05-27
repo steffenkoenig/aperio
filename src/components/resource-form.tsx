@@ -214,6 +214,51 @@ export function ResourceForm({ path, method, operation, pathParams = {}, onSucce
               {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Send className="h-3.5 w-3.5 mr-1" />}
               {method.toUpperCase()}
             </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const env = getActiveEnvironment();
+                if (!env?.baseUrl) {
+                  toast.error('No base URL configured.');
+                  return;
+                }
+
+                const headers: Record<string, string> = {
+                  'Content-Type': 'application/json',
+                };
+
+                if (env.authType === 'bearer' && env.authValue) {
+                  headers['Authorization'] = `Bearer ${env.authValue}`;
+                } else if (env.authType === 'apiKey' && env.authValue) {
+                  headers[env.authHeader ?? 'X-API-Key'] = env.authValue;
+                } else if (env.authType === 'basic' && env.authValue) {
+                  headers['Authorization'] = `Basic ${btoa(env.authValue)}`;
+                }
+
+                const options: RequestInit = {
+                  method: method.toUpperCase(),
+                  headers,
+                };
+
+                if (Object.keys(formData).length > 0) {
+                  options.body = JSON.stringify(formData, null, 2);
+                }
+
+                const fetchCode = `fetch('${env.baseUrl}${resolvedPath}', {\n  method: '${options.method}',\n  headers: ${JSON.stringify(options.headers, null, 2).replace(/\n/g, '\n  ')}${options.body ? `,\n  body: JSON.stringify(${options.body.replace(/\n/g, '\n  ')})` : ''}\n});`;
+
+                navigator.clipboard.writeText(fetchCode).then(() => {
+                  toast.success('Fetch code copied to clipboard');
+                }).catch(() => {
+                  toast.error('Failed to copy code to clipboard');
+                });
+              }}
+              disabled={missingParams.length > 0}
+            >
+              Copy as Fetch
+            </Button>
           </div>
         </form>
 
