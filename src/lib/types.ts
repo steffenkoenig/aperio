@@ -106,6 +106,7 @@ export interface ResourceNode {
   id: string;
   name: string;
   path: string;
+  slug: string;
   type: PathType;
   methods: string[];
   operations: Record<string, OperationObject>;
