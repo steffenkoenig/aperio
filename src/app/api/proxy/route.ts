@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { isSafeUrl } from '@/lib/ssrf';
+import { safeFetch } from '@/lib/ssrf';
 
 /**
  * Internal API Proxy
@@ -34,14 +34,6 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: 'url and method are required' }, { status: 400 });
     }
 
-    const isSafe = await isSafeUrl(url);
-    if (!isSafe) {
-      return Response.json(
-        { error: 'Invalid or restricted URL provided.' },
-        { status: 400 }
-      );
-    }
-
     const fetchOptions: RequestInit = {
       method: method.toUpperCase(),
       headers: {
@@ -55,7 +47,15 @@ export async function POST(req: NextRequest) {
       fetchOptions.body = JSON.stringify(requestBody);
     }
 
-    const response = await fetch(url, fetchOptions);
+    let response: Response;
+    try {
+      response = await safeFetch(url, fetchOptions);
+    } catch (err: any) {
+      return Response.json(
+        { error: err.message || 'Invalid or restricted URL provided.' },
+        { status: 400 }
+      );
+    }
     
     const contentType = response.headers.get('content-type') ?? '';
     

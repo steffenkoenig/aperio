@@ -14,48 +14,69 @@ export async function isSafeUrl(urlString: string): Promise<boolean> {
       return false;
     }
 
-    const hostname = url.hostname;
+    let hostname = url.hostname.toLowerCase();
+
+    // Strip trailing dot to prevent hostname trailing-dot bypasses (e.g. localhost.)
+    if (hostname.endsWith('.')) {
+      hostname = hostname.slice(0, -1);
+    }
 
     // Quick checks for common internal/local hostnames
     if (hostname === 'localhost' || hostname.endsWith('.local') || hostname.endsWith('.internal')) {
       return false;
     }
 
-    // Helper to identify private IP addresses
-    const isPrivateIp = (ip: string) => {
+    // Helper to identify private/reserved IP addresses
+    const isPrivateIp = (ip: string): boolean => {
       // IPv4
       if (ip.includes('.')) {
         const parts = ip.split('.').map(p => parseInt(p, 10));
         if (parts.length === 4) {
-          const [p1, p2] = parts;
+          const [p1, p2, p3, p4] = parts;
+          if (Number.isNaN(p1) || Number.isNaN(p2) || Number.isNaN(p3) || Number.isNaN(p4)) {
+            return true; // Invalid parts are considered unsafe
+          }
           return (
-            p1 === 10 || // 10.0.0.0/8
-            (p1 === 172 && p2 >= 16 && p2 <= 31) || // 172.16.0.0/12
-            (p1 === 192 && p2 === 168) || // 192.168.0.0/16
-            p1 === 127 || // 127.0.0.0/8 (Loopback)
-            p1 === 0 || // 0.0.0.0/8
-            (p1 === 169 && p2 === 254) // 169.254.0.0/16 (Link-local, often AWS metadata)
+            p1 === 127 || // Loopback
+            p1 === 10 || // Private network 10.0.0.0/8
+            (p1 === 172 && p2 >= 16 && p2 <= 31) || // Private network 172.16.0.0/12
+            (p1 === 192 && p2 === 168) || // Private network 192.168.0.0/16
+            p1 === 0 || // Local network 0.0.0.0/8
+            (p1 === 169 && p2 === 254) || // Link-local 169.254.0.0/16
+            (p1 === 100 && p2 >= 64 && p2 <= 127) || // Carrier-Grade NAT 100.64.0.0/10
+            (p1 === 198 && (p2 === 18 || p2 === 19)) || // Benchmark Testing 198.18.0.0/15
+            (p1 >= 224 && p1 <= 239) || // Multicast 224.0.0.0/4
+            p1 >= 240 // Reserved/Experimental (240.0.0.0/4)
           );
         }
       }
       // IPv6
       if (ip.includes(':')) {
-        const lowerIp = ip.toLowerCase();
+        const lowerIp = ip.toLowerCase().trim();
+
+        // Strip enclosing square brackets if present
+        let cleanIp = lowerIp;
+        if (cleanIp.startsWith('[') && cleanIp.endsWith(']')) {
+          cleanIp = cleanIp.slice(1, -1);
+        }
 
         // Handle IPv4-mapped IPv6 addresses (e.g., ::ffff:127.0.0.1)
-        if (lowerIp.startsWith('::ffff:')) {
-          const ipv4Part = lowerIp.substring(7);
+        if (cleanIp.startsWith('::ffff:')) {
+          const ipv4Part = cleanIp.substring(7);
           return isPrivateIp(ipv4Part);
         }
 
         return (
-          lowerIp === '::1' || // Loopback
-          lowerIp.startsWith('fc') || // fc00::/7 (Unique local address)
-          lowerIp.startsWith('fd') ||
-          lowerIp.startsWith('fe8') || // fe80::/10 (Link-local address)
-          lowerIp.startsWith('fe9') ||
-          lowerIp.startsWith('fea') ||
-          lowerIp.startsWith('feb')
+          cleanIp === '::1' || // Loopback
+          cleanIp === '::' || // Unspecified
+          cleanIp.startsWith('fc') || // Unique local address fc00::/7
+          cleanIp.startsWith('fd') ||
+          cleanIp.startsWith('fe8') || // Link-local address fe80::/10
+          cleanIp.startsWith('fe9') ||
+          cleanIp.startsWith('fea') ||
+          cleanIp.startsWith('feb') ||
+          cleanIp.startsWith('ff') || // Multicast ff00::/8
+          cleanIp.startsWith('0100::') // Discard-only prefix 100::/64
         );
       }
       return false;
@@ -79,4 +100,49 @@ export async function isSafeUrl(urlString: string): Promise<boolean> {
     // If URL parsing or DNS resolution fails, consider it unsafe
     return false;
   }
+}
+
+/**
+ * A wrapper around native fetch that prevents SSRF by disabling automatic redirects
+ * and manually validating each hop before making the request.
+ */
+export async function safeFetch(
+  urlString: string,
+  options: RequestInit = {},
+  redirectCount = 0
+): Promise<Response> {
+  const maxRedirects = 5;
+  if (redirectCount > maxRedirects) {
+    throw new Error('Too many redirects');
+  }
+
+  // Validate the URL before fetching
+  const isSafe = await isSafeUrl(urlString);
+  if (!isSafe) {
+    throw new Error('SSRF Blocked: URL is not safe.');
+  }
+
+  // Merge options and enforce manual redirect handling
+  const fetchOptions: RequestInit = {
+    ...options,
+    redirect: 'manual',
+  };
+
+  const response = await fetch(urlString, fetchOptions);
+
+  // If redirect (300-399) and location header is present
+  if (
+    response.status >= 300 &&
+    response.status < 400 &&
+    response.headers.has('location')
+  ) {
+    const location = response.headers.get('location')!;
+    const originUrl = new URL(urlString);
+    const redirectUrl = new URL(location, originUrl).toString();
+
+    // Recursively safeFetch the redirect URL, checking safety at each hop
+    return safeFetch(redirectUrl, options, redirectCount + 1);
+  }
+
+  return response;
 }

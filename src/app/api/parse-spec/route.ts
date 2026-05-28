@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { parseOpenApiSpec } from '@/lib/openapi-parser';
-import { isSafeUrl } from '@/lib/ssrf';
+import { safeFetch } from '@/lib/ssrf';
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,15 +9,16 @@ export async function POST(req: NextRequest) {
     let input: string | object;
     
     if (body.url) {
-      const isSafe = await isSafeUrl(body.url);
-      if (!isSafe) {
+      let response: Response;
+      try {
+        response = await safeFetch(body.url);
+      } catch (err: any) {
         return Response.json(
-          { error: 'Invalid or restricted URL provided.' },
+          { error: err.message || 'Invalid or restricted URL provided.' },
           { status: 400 }
         );
       }
-
-      const response = await fetch(body.url);
+      
       if (!response.ok) {
         return Response.json(
           { error: `Failed to fetch spec: ${response.statusText}` },
