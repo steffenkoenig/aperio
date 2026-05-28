@@ -1,4 +1,21 @@
 import { NextRequest } from 'next/server';
+import dns from 'node:dns';
+
+function isPrivateIP(ip: string): boolean {
+  const parts = ip.split('.');
+  if (parts.length === 4) {
+    const [a, b] = parts.map(Number);
+    if (a === 10 || a === 127 || a === 0 || a === 169) return true;
+    if (a === 172 && b >= 16 && b <= 31) return true;
+    if (a === 192 && b === 168) return true;
+  }
+  // IPv6
+  if (ip === '::1' || ip === '::' || ip === '0:0:0:0:0:0:0:0') return true;
+  if (/^f[cd][0-9a-f]{2}:/i.test(ip)) return true;
+  if (/^fe[89ab][0-9a-f]:/i.test(ip)) return true;
+  if (ip.toLowerCase().startsWith('::ffff:')) return isPrivateIP(ip.substring(7));
+  return false;
+}
 
 /**
  * Internal API Proxy
@@ -33,8 +50,33 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: 'url and method are required' }, { status: 400 });
     }
 
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(url);
+    } catch {
+      return Response.json({ error: 'Invalid URL' }, { status: 400 });
+    }
+
+    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+      return Response.json({ error: 'Invalid protocol' }, { status: 400 });
+    }
+
+    try {
+      // hostname may have brackets for IPv6 literals. Strip them.
+      const lookupHostname = parsedUrl.hostname.replace(/^\[(.*)\]$/, '$1');
+      const addresses = await dns.promises.lookup(lookupHostname, { all: true });
+      for (const { address } of addresses) {
+        if (isPrivateIP(address)) {
+          return Response.json({ error: 'Access to local or private networks is blocked' }, { status: 403 });
+        }
+      }
+    } catch {
+      return Response.json({ error: 'Failed to resolve hostname' }, { status: 400 });
+    }
+
     const fetchOptions: RequestInit = {
       method: method.toUpperCase(),
+      redirect: 'manual',
       headers: {
         'Content-Type': 'application/json',
         ...extraHeaders,
