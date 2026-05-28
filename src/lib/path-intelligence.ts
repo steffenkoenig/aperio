@@ -92,7 +92,6 @@ export function buildResourceTree(paths: Record<string, PathItemObject>): Resour
     const node: ResourceNode = {
       id,
       name,
-      path,
       slug,
       type,
       methods,
