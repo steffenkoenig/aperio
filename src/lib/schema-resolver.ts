@@ -88,10 +88,20 @@ export function resolveSchema(
     result = { ...result, properties: resolvedProps };
   }
 
-  // Recursively resolve array items.
-  if (result.items) {
-    result.items = resolveSchema(result.items, components, visited);
+  // Recursively resolve nested items (arrays or single schema)
+    if (Array.isArray(result.items)) {
+      result = {
+        ...result,
+        items: (result.items as SchemaObject[]).map(item => resolveSchema(item, components, visited)) as unknown as SchemaObject
+      };
+    } else {
+      result = {
+        ...result,
+        items: resolveSchema(result.items as SchemaObject, components, visited)
+      };
+    }
   }
 
   return result;
+
 }
