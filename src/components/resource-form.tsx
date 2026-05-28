@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -41,6 +41,11 @@ interface FormFieldProps {
 
 export function FormField({ name, schema, value, onChange, required, components }: FormFieldProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const itemSchema = useMemo(() => {
+    if (schema.type !== 'array') return null;
+    return schema.items ? resolveSchema(schema.items, components) : null;
+  }, [schema.type, schema.items, components]);
 
   if (schema['x-pathform-hidden']) return null;
 
@@ -102,7 +107,6 @@ export function FormField({ name, schema, value, onChange, required, components 
 
   // 2. Array rendering
   if (type === 'array') {
-    const itemSchema = schema.items ? resolveSchema(schema.items, components) : null;
     const itemType = itemSchema?.type ?? 'string';
 
     if (itemType === 'object') {
