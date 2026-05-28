@@ -13,8 +13,7 @@ import { Database, Zap, Box, KeyRound } from 'lucide-react';
 
 function findNodeBySlug(nodes: ResourceNode[], slug: string): ResourceNode | null {
   for (const node of nodes) {
-    const nodeSlug = pathToSlug(node.path);
-    if (nodeSlug === slug) return node;
+    if (node.slug === slug) return node;
     const found = findNodeBySlug(node.children, slug);
     if (found) return found;
   }

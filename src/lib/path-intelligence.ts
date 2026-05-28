@@ -1,4 +1,5 @@
 import { ResourceNode, PathItemObject, PathType, OperationObject } from './types';
+import { pathToSlug } from './utils';
 
 // Action verbs are lowercase because they are compared via lastSegment?.toLowerCase().includes(v)
 const ACTION_VERBS = ['reboot', 'start', 'stop', 'restart', 'enable', 'disable', 'activate', 'deactivate', 'cancel', 'approve', 'reject', 'publish', 'unpublish', 'archive', 'restore', 'reset', 'verify', 'send', 'resend'];
@@ -86,11 +87,13 @@ export function buildResourceTree(paths: Record<string, PathItemObject>): Resour
     const type = classifyPath(path, methods);
     const name = getResourceName(path);
     const id = path.replace(/[{}\/]/g, '_').replace(/^_/, '');
+    const slug = pathToSlug(path);
     
     const node: ResourceNode = {
       id,
       name,
       path,
+      slug,
       type,
       methods,
       operations,
