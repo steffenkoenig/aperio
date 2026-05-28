@@ -1,4 +1,5 @@
 import { ResourceNode, PathItemObject, PathType, OperationObject } from './types';
+import { pathToSlug } from './utils';
 
 // Action verbs are lowercase because they are compared via lastSegment?.toLowerCase().includes(v)
 const ACTION_VERBS = ['reboot', 'start', 'stop', 'restart', 'enable', 'disable', 'activate', 'deactivate', 'cancel', 'approve', 'reject', 'publish', 'unpublish', 'archive', 'restore', 'reset', 'verify', 'send', 'resend'];
@@ -66,7 +67,7 @@ function getPathParent(path: string): string | undefined {
   return undefined;
 }
 
-export function buildResourceTree(paths: Record<string, PathItemObject>): ResourceNode[] {
+export function buildResourceTree(paths: Record<string, PathItemObject>, collectedTags?: Set<string>): ResourceNode[] {
   const nodes = new Map<string, ResourceNode>();
   
   // First pass: create all nodes
@@ -78,7 +79,12 @@ export function buildResourceTree(paths: Record<string, PathItemObject>): Resour
     const operations: Record<string, OperationObject> = {};
     for (const method of methods) {
       const op = pathItem[method as keyof PathItemObject] as OperationObject | undefined;
-      if (op) operations[method] = op;
+      if (op) {
+        operations[method] = op;
+        if (collectedTags && op.tags) {
+          op.tags.forEach(tag => collectedTags.add(tag));
+        }
+      }
     }
     
     if (operations['get']?.['x-pathform-hidden'] && methods.length === 1) continue;
@@ -86,11 +92,12 @@ export function buildResourceTree(paths: Record<string, PathItemObject>): Resour
     const type = classifyPath(path, methods);
     const name = getResourceName(path);
     const id = path.replace(/[{}\/]/g, '_').replace(/^_/, '');
+    const slug = pathToSlug(path);
     
     const node: ResourceNode = {
       id,
       name,
-      path,
+      slug,
       type,
       methods,
       operations,

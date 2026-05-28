@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ResourceNode } from '@/lib/types';
 import { ChevronRight, Database, Zap, Box, FolderOpen, Folder } from 'lucide-react';
-import { cn, pathToSlug } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
@@ -33,6 +33,10 @@ function getMethodBadgeVariant(method: string): 'default' | 'secondary' | 'destr
   }
 }
 
+function NodeIcon({ node, className }: { node: ResourceNode; className?: string }) {
+  return React.createElement(getNodeIcon(node), { className });
+}
+
 interface NavItemProps {
   node: ResourceNode;
   depth: number;
@@ -42,7 +46,7 @@ function NavItem({ node, depth }: NavItemProps) {
   const pathname = usePathname();
   const [expanded, setExpanded] = useState(true);
   const hasChildren = node.children.length > 0;
-  const nodeHref = `/dashboard/resource/${encodeURIComponent(pathToSlug(node.path))}`;
+  const nodeHref = `/dashboard/resource/${encodeURIComponent(node.slug)}`;
   const isActive = pathname === nodeHref;
 
   const nonGetMethods = node.methods.filter((m) => m !== 'get');
@@ -70,7 +74,7 @@ function NavItem({ node, depth }: NavItemProps) {
             )}
           </button>
         ) : (
-          React.createElement(getNodeIcon(node), { className: "h-3.5 w-3.5 flex-shrink-0" })
+          <NodeIcon node={node} className="h-3.5 w-3.5 flex-shrink-0" />
         )}
         <Link href={nodeHref} className="flex-1 truncate">
           {node.name}
