@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ResourceNode } from '@/lib/types';
 import { ChevronRight, Database, Zap, Box, FolderOpen, Folder } from 'lucide-react';
-import { cn, pathToSlug } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
@@ -46,7 +46,7 @@ function NavItem({ node, depth }: NavItemProps) {
   const pathname = usePathname();
   const [expanded, setExpanded] = useState(true);
   const hasChildren = node.children.length > 0;
-  const nodeHref = `/dashboard/resource/${encodeURIComponent(pathToSlug(node.path))}`;
+  const nodeHref = `/dashboard/resource/${encodeURIComponent(node.slug)}`;
   const isActive = pathname === nodeHref;
 
   const nonGetMethods = node.methods.filter((m) => m !== 'get');

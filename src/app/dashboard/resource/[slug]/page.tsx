@@ -8,12 +8,12 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ResourceNode, OperationObject } from '@/lib/types';
-import { pathToSlug, extractPathParamNames } from '@/lib/utils';
+import { extractPathParamNames } from '@/lib/utils';
 import { Database, Zap, Box, KeyRound } from 'lucide-react';
 
 function findNodeBySlug(nodes: ResourceNode[], slug: string): ResourceNode | null {
   for (const node of nodes) {
-    const nodeSlug = pathToSlug(node.path);
+    const nodeSlug = node.slug;
     if (nodeSlug === slug) return node;
     const found = findNodeBySlug(node.children, slug);
     if (found) return found;
@@ -166,7 +166,7 @@ export default function ResourcePage({ params }: PageProps) {
               {node.children.map((child) => (
                 <a
                   key={child.id}
-                  href={`/dashboard/resource/${encodeURIComponent(pathToSlug(child.path))}`}
+                  href={`/dashboard/resource/${encodeURIComponent(child.slug)}`}
                   className="flex items-center justify-between p-3 rounded-lg border hover:border-primary/30 hover:bg-muted/30 transition-colors"
                 >
                   <div>
