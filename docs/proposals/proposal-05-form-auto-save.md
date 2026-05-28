@@ -8,7 +8,7 @@ Currently, if a user spends time filling out a complex auto-generated form (e.g.
 
 ## Proposed Changes
 - Enhance the `ResourceForm` component to hook into the `onChange` event provided by `@rjsf/core`.
-- Debounce form updates and serialize the current `formData` state to `localStorage` or `IndexedDB`, keyed by the specific endpoint path and HTTP method (e.g., `draft_POST_/pets`).
+- Debounce form updates and serialize the current `formData` state to `localStorage` or `IndexedDB`, keyed by a unique spec identifier, the specific endpoint path, and the HTTP method (e.g., `draft_[specId]_POST_/pets`) to prevent cross-spec data collisions.
 - Upon loading the `ResourceForm` for a given endpoint, check local storage for an existing draft. If found, prompt the user with a subtle banner to "Restore Draft" or automatically populate the form if configured to do so.
 - Clear the saved draft automatically upon a successful API submission.
 - Provide a manual "Clear Form / Discard Draft" button next to the submit button.
@@ -19,6 +19,7 @@ Currently, if a user spends time filling out a complex auto-generated form (e.g.
 - Submitting the form successfully removes the draft from local storage.
 - A "Discard Draft" button is available to easily clear the form and delete the local draft.
 - The feature works correctly for all supported schema types, including nested structures.
+- Drafts are correctly partitioned by a unique spec identifier, ensuring that forms for different specifications with identical paths do not collide.
 
 ## Technical & Compliance Considerations
 - **Documentation:** Updates will be made across all three documentation architectures:

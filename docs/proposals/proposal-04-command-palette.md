@@ -11,13 +11,13 @@ When users load massive OpenAPI specifications (e.g., enterprise APIs with hundr
 - Bind the palette to a global keyboard shortcut (e.g., `Ctrl+K` or `Cmd+K`).
 - Aggregate all available resources, paths, and HTTP methods from the loaded OpenAPI spec in the Zustand store (`spec-store.ts`) into a searchable index.
 - Display a categorized search result list within the palette, allowing users to filter by typing.
-- Upon selection, automatically navigate the user to the corresponding resource view (`/dashboard/resource/[slug]`).
+- Upon selection, automatically navigate the user to the corresponding resource view (`/dashboard/resource/[slug]`), passing query parameters (e.g., `?method=GET&path=/users`) to automatically focus and highlight the specific operation.
 
 ## Definition of Done
 - The Command Palette can be opened via `Ctrl+K`/`Cmd+K` from any page within the dashboard.
 - It can also be opened via a dedicated search button/icon in the top navigation bar.
 - The palette instantly searches across all loaded tags, paths, and endpoints, displaying real-time results categorized by type.
-- Selecting a search result successfully navigates the UI to the correct resource page and focuses the correct tab/operation.
+- Selecting a search result successfully navigates the UI to the correct resource page and automatically focuses/scrolls to the specific operation selected, based on the query parameters.
 - The UI handles empty search results gracefully.
 
 ## Technical & Compliance Considerations
