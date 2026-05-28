@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -286,7 +286,9 @@ export function ResourceForm({ path, method, operation, pathParams = {}, onSucce
 
   const rawSchema = getSchema(operation);
   const components = parsedSpec?.raw.components;
-  const schema = rawSchema ? resolveSchema(rawSchema, components) : null;
+  const schema = useMemo(() => {
+    return rawSchema ? resolveSchema(rawSchema, components) : null;
+  }, [rawSchema, components]);
   const properties = schema?.properties ?? {};
   const required = schema?.required ?? [];
 
