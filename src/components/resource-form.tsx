@@ -42,6 +42,11 @@ interface FormFieldProps {
 export function FormField({ name, schema, value, onChange, required, components }: FormFieldProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
+  const itemSchema = useMemo(() => {
+    if (schema.type !== 'array') return null;
+    return schema.items ? resolveSchema(schema.items, components) : null;
+  }, [schema.type, schema.items, components]);
+
   if (schema['x-pathform-hidden']) return null;
 
   const label = schema.title ?? name;
@@ -102,7 +107,6 @@ export function FormField({ name, schema, value, onChange, required, components 
 
   // 2. Array rendering
   if (type === 'array') {
-    const itemSchema = schema.items ? resolveSchema(schema.items, components) : null;
     const itemType = itemSchema?.type ?? 'string';
 
     if (itemType === 'object') {
