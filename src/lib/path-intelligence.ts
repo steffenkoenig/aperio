@@ -87,12 +87,12 @@ export function buildResourceTree(paths: Record<string, PathItemObject>): Resour
     const type = classifyPath(path, methods);
     const name = getResourceName(path);
     const id = path.replace(/[{}\/]/g, '_').replace(/^_/, '');
+    const slug = pathToSlug(path);
     
     const node: ResourceNode = {
       id,
       name,
-      path,
-      slug: pathToSlug(path),
+      slug,
       type,
       methods,
       operations,

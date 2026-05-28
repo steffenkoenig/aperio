@@ -12,11 +12,13 @@ import { extractPathParamNames } from '@/lib/utils';
 import { Database, Zap, Box, KeyRound } from 'lucide-react';
 
 function findNodeBySlug(nodes: ResourceNode[], slug: string): ResourceNode | null {
+  if (!nodes) return null;
   for (const node of nodes) {
-    const nodeSlug = node.slug;
-    if (nodeSlug === slug) return node;
-    const found = findNodeBySlug(node.children, slug);
-    if (found) return found;
+    if (node.slug === slug) return node;
+    if (node.children) {
+      const found = findNodeBySlug(node.children, slug);
+      if (found) return found;
+    }
   }
   return null;
 }
