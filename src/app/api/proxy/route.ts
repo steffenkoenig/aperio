@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { isSafeUrl } from '@/lib/ssrf';
 
 /**
  * Internal API Proxy
@@ -31,6 +32,14 @@ export async function POST(req: NextRequest) {
 
     if (!url || !method) {
       return Response.json({ error: 'url and method are required' }, { status: 400 });
+    }
+
+    const isSafe = await isSafeUrl(url);
+    if (!isSafe) {
+      return Response.json(
+        { error: 'Invalid or restricted URL provided.' },
+        { status: 400 }
+      );
     }
 
     const fetchOptions: RequestInit = {
