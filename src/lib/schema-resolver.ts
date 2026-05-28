@@ -89,6 +89,7 @@ export function resolveSchema(
   }
 
   // Recursively resolve nested items (arrays or single schema)
+  if (result.items) {
     if (Array.isArray(result.items)) {
       result = {
         ...result,
