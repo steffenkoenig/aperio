@@ -42,16 +42,10 @@ export async function parseOpenApiSpec(input: string | object): Promise<ParsedSp
     throw new Error('Invalid OpenAPI spec: missing paths or openapi field');
   }
 
-  const resourceTree = buildResourceTree(spec.paths || {});
+  const extractedTags = new Set<string>();
+  const resourceTree = buildResourceTree(spec.paths || {}, extractedTags);
 
-  const tags = spec.tags?.map((t) => t.name) ?? 
-    [...new Set(
-      Object.values(spec.paths || {}).flatMap((item) =>
-        Object.values(item)
-          .filter((op): op is { tags?: string[] } => typeof op === 'object' && op !== null && 'tags' in op)
-          .flatMap((op) => op.tags ?? [])
-      )
-    )];
+  const tags = spec.tags?.map((t) => t.name) ?? Array.from(extractedTags);
 
   const baseUrl = spec.servers?.[0]?.url;
 

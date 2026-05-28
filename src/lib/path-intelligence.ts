@@ -66,7 +66,7 @@ function getPathParent(path: string): string | undefined {
   return undefined;
 }
 
-export function buildResourceTree(paths: Record<string, PathItemObject>): ResourceNode[] {
+export function buildResourceTree(paths: Record<string, PathItemObject>, collectedTags?: Set<string>): ResourceNode[] {
   const nodes = new Map<string, ResourceNode>();
   
   // First pass: create all nodes
@@ -78,7 +78,12 @@ export function buildResourceTree(paths: Record<string, PathItemObject>): Resour
     const operations: Record<string, OperationObject> = {};
     for (const method of methods) {
       const op = pathItem[method as keyof PathItemObject] as OperationObject | undefined;
-      if (op) operations[method] = op;
+      if (op) {
+        operations[method] = op;
+        if (collectedTags && op.tags) {
+          op.tags.forEach(tag => collectedTags.add(tag));
+        }
+      }
     }
     
     if (operations['get']?.['x-pathform-hidden'] && methods.length === 1) continue;
