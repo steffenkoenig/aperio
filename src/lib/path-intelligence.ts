@@ -4,8 +4,7 @@ import { pathToSlug } from './utils';
 // Action verbs are lowercase because they are compared via lastSegment?.toLowerCase().includes(v)
 const ACTION_VERBS = ['reboot', 'start', 'stop', 'restart', 'enable', 'disable', 'activate', 'deactivate', 'cancel', 'approve', 'reject', 'publish', 'unpublish', 'archive', 'restore', 'reset', 'verify', 'send', 'resend'];
 
-function classifyPath(path: string, methods: string[]): PathType {
-  const segments = path.split('/').filter(Boolean);
+function classifyPath(segments: string[], methods: string[]): PathType {
   if (segments.length === 0) return 'singleton';
   
   const lastSegment = segments[segments.length - 1];
@@ -30,8 +29,7 @@ function classifyPath(path: string, methods: string[]): PathType {
   return 'sub-resource';
 }
 
-function getResourceName(path: string): string {
-  const segments = path.split('/').filter(Boolean);
+function getResourceName(path: string, segments: string[]): string {
   const lastSegment = segments[segments.length - 1];
   if (!lastSegment) return path;
   
@@ -54,8 +52,7 @@ function toTitleCase(str: string): string {
     .join(' ');
 }
 
-function getPathParent(path: string): string | undefined {
-  const segments = path.split('/').filter(Boolean);
+function getPathParent(segments: string[]): string | undefined {
   if (segments.length <= 1) return undefined;
   
   // Find the parent path (up to and including the last param segment)
@@ -69,9 +66,12 @@ function getPathParent(path: string): string | undefined {
 
 export function buildResourceTree(paths: Record<string, PathItemObject>, collectedTags?: Set<string>): ResourceNode[] {
   const nodes = new Map<string, ResourceNode>();
+  const pathSegmentsMap = new Map<string, string[]>();
   
   // First pass: create all nodes
   for (const [path, pathItem] of Object.entries(paths)) {
+    const segments = path.split('/').filter(Boolean);
+    pathSegmentsMap.set(path, segments);
     const methods = ['get', 'post', 'put', 'patch', 'delete'].filter(
       (m) => m in pathItem
     );
@@ -89,8 +89,8 @@ export function buildResourceTree(paths: Record<string, PathItemObject>, collect
     
     if (operations['get']?.['x-pathform-hidden'] && methods.length === 1) continue;
     
-    const type = classifyPath(path, methods);
-    const name = getResourceName(path);
+    const type = classifyPath(segments, methods);
+    const name = getResourceName(path, segments);
     const id = path.replace(/[{}\/]/g, '_').replace(/^_/, '');
     const slug = pathToSlug(path);
     
@@ -102,7 +102,7 @@ export function buildResourceTree(paths: Record<string, PathItemObject>, collect
       methods,
       operations,
       children: [],
-      parentPath: getPathParent(path),
+      parentPath: getPathParent(segments),
     };
     
     nodes.set(path, node);
@@ -123,7 +123,7 @@ export function buildResourceTree(paths: Record<string, PathItemObject>, collect
       parent.children.push(node);
     } else {
       // Look for a parent resource collection (e.g., /users for /users/{id}/posts)
-      const pathSegments = node.path.split('/').filter(Boolean);
+      const pathSegments = pathSegmentsMap.get(node.path) || [];
       let placed = false;
       
       for (let i = pathSegments.length - 2; i >= 0; i--) {
