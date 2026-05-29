@@ -12,9 +12,9 @@ export async function POST(req: NextRequest) {
       let response: Response;
       try {
         response = await safeFetch(body.url);
-      } catch (err: any) {
+      } catch (err: unknown) {
         return Response.json(
-          { error: err.message || 'Invalid or restricted URL provided.' },
+          { error: (err instanceof Error && err.message) || 'Invalid or restricted URL provided.' },
           { status: 400 }
         );
       }
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     const parsed = await parseOpenApiSpec(input);
     return Response.json(parsed);
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
+    const message = (error instanceof Error && error.message) || 'Unknown error';
     return Response.json({ error: message }, { status: 500 });
   }
 }
