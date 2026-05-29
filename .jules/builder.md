@@ -8,8 +8,9 @@
 - [x] Migrate `ResourceForm` to use `@rjsf/core`. -> Attached Test: `Test UI Navigation`
 - [x] Fix `$ref` resolution inside array items in `schema-resolver.ts` -> Attached Test: `should recursively resolve array items schema` and `should recursively resolve array items tuple schemas`
 - [x] Documentation Sync -> Docs Updated: Customer (release notes), Technical (architecture tuple tracking), Support (troubleshooting unresolved $refs)
+- [x] Pre-commit and Final Code Review -> Attached Test: Passed locally
 
-****Active Step:**** Pre-commit and Final Code Review
+****Active Step:**** Submit PR
 ****Blockers/Constraints:**** None. All tests passing cleanly.
 
 ---
