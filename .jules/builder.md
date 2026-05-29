@@ -2,15 +2,15 @@
 
 ## Milestone 1.0 - Integrate `@rjsf/core` in `ResourceForm`
 
-****Current State Audit:**** Completed `@rjsf/core` migration. Resolved all module transpilation errors in Jest. Fixed critical $ref resolution bug where nested arrays in `schema-resolver.ts` were failing, causing rendering crashes. Tests assert tuple parsing correctly maps over arrays instead of mutating them.
+**Current State Audit:** Completed `@rjsf/core` migration. Resolved all module transpilation errors in Jest. Fixed critical $ref resolution bug where nested arrays in `schema-resolver.ts` were failing, causing rendering crashes. Tests assert tuple parsing correctly maps over arrays instead of mutating them.
 
-****Completed Items:****
+**Completed Items:**
 - [x] Migrate `ResourceForm` to use `@rjsf/core`. -> Attached Test: `Test UI Navigation`
 - [x] Fix `$ref` resolution inside array items in `schema-resolver.ts` -> Attached Test: `should recursively resolve array items schema` and `should recursively resolve array items tuple schemas`
 - [x] Documentation Sync -> Docs Updated: Customer (release notes), Technical (architecture tuple tracking), Support (troubleshooting unresolved $refs)
 
-****Active Step:**** Pre-commit and Final Code Review
-****Blockers/Constraints:**** None. All tests passing cleanly.
+**Active Step:** Pre-commit and Final Code Review
+**Blockers/Constraints:** None. All tests passing cleanly.
 
 ---
 
@@ -21,9 +21,9 @@
 - [x] Write Proposal 04: Global Command Palette (`docs/proposals/proposal-04-command-palette.md`).
 - [x] Write Proposal 05: Form Auto-Save & Drafts (`docs/proposals/proposal-05-form-auto-save.md`).
 - [x] Write Proposal 06: Saved Views & Favorites (`docs/proposals/proposal-06-saved-views.md`).
-- [x] Write Proposal 07: Saved Bookmarks (`docs/proposals/01-saved-bookmarks.md`).
-- [x] Write Proposal 08: Offline PWA Support (`docs/proposals/02-offline-pwa-support.md`).
-- [x] Write Proposal 09: Bulk Operations (`docs/proposals/03-bulk-operations.md`).
+- [x] Write Proposal 07: Saved Bookmarks (`docs/proposals/proposal-07-saved-bookmarks.md`).
+- [x] Write Proposal 08: Offline PWA Support (`docs/proposals/proposal-08-offline-pwa-support.md`).
+- [x] Write Proposal 09: Bulk Operations (`docs/proposals/proposal-09-bulk-operations.md`).
 - [x] Initialize this tracker.
 
 ## Current State Audit (Proposals)
@@ -42,7 +42,7 @@
     1. `docs/proposals/proposal-04-command-palette.md`
     2. `docs/proposals/proposal-05-form-auto-save.md`
     3. `docs/proposals/proposal-06-saved-views.md`
-    4. `docs/proposals/01-saved-bookmarks.md`
-    5. `docs/proposals/02-offline-pwa-support.md`
-    6. `docs/proposals/03-bulk-operations.md`
+    4. `docs/proposals/proposal-07-saved-bookmarks.md`
+    5. `docs/proposals/proposal-08-offline-pwa-support.md`
+    6. `docs/proposals/proposal-09-bulk-operations.md`
     7. `.jules/builder.md` (this file)
