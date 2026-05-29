@@ -21,6 +21,9 @@
 - [x] Write Proposal 04: Global Command Palette (`docs/proposals/proposal-04-command-palette.md`).
 - [x] Write Proposal 05: Form Auto-Save & Drafts (`docs/proposals/proposal-05-form-auto-save.md`).
 - [x] Write Proposal 06: Saved Views & Favorites (`docs/proposals/proposal-06-saved-views.md`).
+- [x] Write Proposal 07: Saved Bookmarks (`docs/proposals/01-saved-bookmarks.md`).
+- [x] Write Proposal 08: Offline PWA Support (`docs/proposals/02-offline-pwa-support.md`).
+- [x] Write Proposal 09: Bulk Operations (`docs/proposals/03-bulk-operations.md`).
 - [x] Initialize this tracker.
 
 ## Current State Audit (Proposals)
@@ -39,4 +42,7 @@
     1. `docs/proposals/proposal-04-command-palette.md`
     2. `docs/proposals/proposal-05-form-auto-save.md`
     3. `docs/proposals/proposal-06-saved-views.md`
-    4. `.jules/builder.md` (this file)
+    4. `docs/proposals/01-saved-bookmarks.md`
+    5. `docs/proposals/02-offline-pwa-support.md`
+    6. `docs/proposals/03-bulk-operations.md`
+    7. `.jules/builder.md` (this file)

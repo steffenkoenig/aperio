@@ -101,8 +101,8 @@ describe('safeFetch', () => {
       status: 200,
       ok: true,
       headers: {
-        has: (name: string) => false,
-        get: (name: string) => null,
+        has: () => false,
+        get: () => null,
       },
       text: async () => 'OK',
     };
@@ -140,8 +140,8 @@ describe('safeFetch', () => {
       status: 200,
       ok: true,
       headers: {
-        has: (name: string) => false,
-        get: (name: string) => null,
+        has: () => false,
+        get: () => null,
       },
       text: async () => 'Final Content',
     };

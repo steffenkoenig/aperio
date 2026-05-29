@@ -12,9 +12,9 @@ export async function POST(req: NextRequest) {
       let response: Response;
       try {
         response = await safeFetch(body.url);
-      } catch (err: any) {
+      } catch (err: unknown) {
         return Response.json(
-          { error: err.message || 'Invalid or restricted URL provided.' },
+          { error: err instanceof Error ? err.message : 'Invalid or restricted URL provided.' },
           { status: 400 }
         );
       }
