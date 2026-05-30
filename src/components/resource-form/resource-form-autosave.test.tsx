@@ -1,9 +1,9 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { ResourceForm } from './resource-form';
-import { useSpecStore } from '../../src/store/spec-store';
+import { ResourceForm } from './index';
+import { useSpecStore } from '../../../src/store/spec-store';
 
-jest.mock('../../src/store/spec-store', () => ({
+jest.mock('../../../src/store/spec-store', () => ({
   useSpecStore: jest.fn(),
 }));
 
