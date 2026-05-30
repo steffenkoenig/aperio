@@ -1,5 +1,24 @@
 # Builder Task Ledger
 
+## Milestone 2.0 - Batch 3 Proposal Generation
+
+**Current State Audit:** Evaluated current implementation plans and user requests for further improvements. Generated 3 new platform-focused proposals without relying on external connections or AI functionalities.
+- `docs/proposals/proposal-10-data-export.md`
+- `docs/proposals/proposal-11-mock-data-autofill.md`
+- `docs/proposals/proposal-12-activity-audit-emails.md`
+
+**Completed Items:**
+- [x] Write Proposal 10: Data Export (`docs/proposals/proposal-10-data-export.md`).
+- [x] Write Proposal 11: Mock Data Autofill (`docs/proposals/proposal-11-mock-data-autofill.md`).
+- [x] Write Proposal 12: Activity Audit Emails (`docs/proposals/proposal-12-activity-audit-emails.md`).
+- [x] Add headers/audit states as directed.
+
+**Active Step:** Complete Pre-commit steps and final checks.
+
+**Blockers/Constraints:** None.
+
+---
+
 ## Milestone 1.0 - Integrate `@rjsf/core` in `ResourceForm`
 
 **Current State Audit:** Completed `@rjsf/core` migration. Resolved all module transpilation errors in Jest. Fixed critical $ref resolution bug where nested arrays in `schema-resolver.ts` were failing, causing rendering crashes. Tests assert tuple parsing correctly maps over arrays instead of mutating them.
@@ -25,6 +44,9 @@
 - [x] Write Proposal 07: Saved Bookmarks (`docs/proposals/proposal-07-saved-bookmarks.md`).
 - [x] Write Proposal 08: Offline PWA Support (`docs/proposals/proposal-08-offline-pwa-support.md`).
 - [x] Write Proposal 09: Bulk Operations (`docs/proposals/proposal-09-bulk-operations.md`).
+- [x] Write Proposal 10: Data Export (`docs/proposals/proposal-10-data-export.md`).
+- [x] Write Proposal 11: Mock Data Autofill (`docs/proposals/proposal-11-mock-data-autofill.md`).
+- [x] Write Proposal 12: Activity Audit Emails (`docs/proposals/proposal-12-activity-audit-emails.md`).
 - [x] Initialize this tracker.
 
 ## Current State Audit (Proposals)
@@ -46,4 +68,7 @@
     4. `docs/proposals/proposal-07-saved-bookmarks.md`
     5. `docs/proposals/proposal-08-offline-pwa-support.md`
     6. `docs/proposals/proposal-09-bulk-operations.md`
-    7. `.jules/builder.md` (this file)
+    7. `docs/proposals/proposal-10-data-export.md`
+    8. `docs/proposals/proposal-11-mock-data-autofill.md`
+    9. `docs/proposals/proposal-12-activity-audit-emails.md`
+    10. `.jules/builder.md` (this file)
