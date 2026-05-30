@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -281,8 +281,6 @@ export function FormField({ name, schema, value, onChange, required, components 
   );
 }
 
-import { useEffect } from 'react';
-
 export function ResourceForm({ path, method, operation, pathParams = {}, onSuccess }: ResourceFormProps) {
   const [formData, setFormData] = useState<Record<string, unknown>>({});
   const [response, setResponse] = useState<unknown>(null);
@@ -383,13 +381,20 @@ export function ResourceForm({ path, method, operation, pathParams = {}, onSucce
       const result = await res.json() as unknown;
       setResponse(result);
       setShowResponse(true);
-      toast.success(`${method.toUpperCase()} ${resolvedPath} – ${res.status}`);
-      onSuccess?.(result);
 
-      // Clear draft on successful submit
-      try {
-        localStorage.removeItem(draftKey);
-      } catch (e) {}
+      if (res.ok) {
+        toast.success(`${method.toUpperCase()} ${resolvedPath} – ${res.status}`);
+        onSuccess?.(result);
+
+        // Clear draft on successful submit
+        try {
+          localStorage.removeItem(draftKey);
+        } catch (e) {}
+      } else {
+        const details = typeof result === 'object' && result !== null && 'error' in result ? String((result as any).error) : '';
+        const msg = details ? `${res.status}: ${details}` : `${res.status} ${res.statusText || ''}`;
+        toast.error(`${method.toUpperCase()} ${resolvedPath} – ${msg}`);
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Request failed';
       toast.error(msg);

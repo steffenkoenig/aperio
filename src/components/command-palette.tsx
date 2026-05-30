@@ -30,7 +30,7 @@ export function CommandPalette() {
 
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
-      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+      if (e.key.toLowerCase() === 'k' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         setOpen((open) => !open);
       }
@@ -47,13 +47,13 @@ export function CommandPalette() {
 
     const traverse = (nodes: ResourceNode[], parentSlug: string = '') => {
       nodes.forEach((node) => {
-        const slug = node.slug || parentSlug;
+        const slug = node.slug || parentSlug || pathToSlug(node.name);
 
         // A node can be a resource (has methods/children)
         items.push({
           title: node.name,
           type: 'resource',
-          slug: node.slug || pathToSlug(node.name),
+          slug,
         });
 
         // A node can also have methods/endpoints
@@ -64,13 +64,13 @@ export function CommandPalette() {
               type: 'endpoint',
               path: node.path,
               method: method.toUpperCase(),
-              slug: node.slug || pathToSlug(node.name),
+              slug,
             });
           });
         }
 
         if (node.children && node.children.length > 0) {
-          traverse(node.children, node.slug || pathToSlug(node.name));
+          traverse(node.children, slug);
         }
       });
     };
@@ -94,7 +94,6 @@ export function CommandPalette() {
   return (
     <>
       <CommandDialog open={open} onOpenChange={setOpen}>
-        <div aria-describedby={undefined}>
         <CommandInput placeholder="Type a command or search..." />
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
@@ -126,7 +125,6 @@ export function CommandPalette() {
             ))}
           </CommandGroup>
         </CommandList>
-        </div>
       </CommandDialog>
     </>
   );

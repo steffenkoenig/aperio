@@ -12,6 +12,23 @@ jest.mock('next/navigation', () => ({
   useRouter: jest.fn(),
 }));
 
+jest.mock('./ui/command', () => {
+  const original = jest.requireActual('./ui/command');
+  return {
+    ...original,
+    CommandDialog: ({ children, open }: any) => {
+      if (!open) return null;
+      return (
+        <div data-testid="command-dialog">
+          <original.Command>
+            {children}
+          </original.Command>
+        </div>
+      );
+    },
+  };
+});
+
 describe('CommandPalette', () => {
   const mockRouter = { push: jest.fn() };
   const mockParsedSpec = {
