@@ -281,12 +281,60 @@ export function FormField({ name, schema, value, onChange, required, components 
   );
 }
 
+import { useEffect } from 'react';
+
 export function ResourceForm({ path, method, operation, pathParams = {}, onSuccess }: ResourceFormProps) {
   const [formData, setFormData] = useState<Record<string, unknown>>({});
   const [response, setResponse] = useState<unknown>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showResponse, setShowResponse] = useState(false);
+  const [isDraftLoaded, setIsDraftLoaded] = useState(false);
   const { getActiveEnvironment, parsedSpec } = useSpecStore();
+
+  const draftKey = `draft_${parsedSpec?.title ?? 'default'}_${method.toUpperCase()}_${path}`;
+
+  useEffect(() => {
+    // Load draft on mount
+    try {
+      const draft = localStorage.getItem(draftKey);
+      if (draft) {
+        setFormData(JSON.parse(draft));
+        toast('Draft restored', {
+          description: 'Your previous form data has been loaded.',
+          duration: 3000,
+        });
+      }
+    } catch (e) {
+      // Ignore local storage errors
+    }
+    setIsDraftLoaded(true);
+  }, [draftKey]);
+
+  useEffect(() => {
+    if (!isDraftLoaded) return;
+
+    const handler = setTimeout(() => {
+      try {
+        if (Object.keys(formData).length > 0) {
+          localStorage.setItem(draftKey, JSON.stringify(formData));
+        } else {
+          localStorage.removeItem(draftKey);
+        }
+      } catch (e) {
+        // Ignore local storage errors (quota exceeded, etc)
+      }
+    }, 500);
+
+    return () => clearTimeout(handler);
+  }, [formData, isDraftLoaded, draftKey]);
+
+  const handleDiscardDraft = () => {
+    setFormData({});
+    try {
+      localStorage.removeItem(draftKey);
+    } catch (e) {}
+    toast.success('Draft discarded');
+  };
 
   const rawSchema = getSchema(operation);
   const components = parsedSpec?.raw.components;
@@ -337,6 +385,11 @@ export function ResourceForm({ path, method, operation, pathParams = {}, onSucce
       setShowResponse(true);
       toast.success(`${method.toUpperCase()} ${resolvedPath} – ${res.status}`);
       onSuccess?.(result);
+
+      // Clear draft on successful submit
+      try {
+        localStorage.removeItem(draftKey);
+      } catch (e) {}
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Request failed';
       toast.error(msg);
@@ -395,6 +448,19 @@ export function ResourceForm({ path, method, operation, pathParams = {}, onSucce
               {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Send className="h-3.5 w-3.5 mr-1" />}
               {method.toUpperCase()}
             </Button>
+
+            {Object.keys(formData).length > 0 && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleDiscardDraft}
+                className="gap-2 text-muted-foreground hover:text-destructive"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Discard Draft
+              </Button>
+            )}
 
             <Button
               type="button"
