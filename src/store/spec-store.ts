@@ -2,7 +2,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { ParsedSpec, AppEnvironment } from '@/lib/types';
+import { ParsedSpec, AppEnvironment, SavedView } from '@/lib/types';
 
 interface SpecStore {
   parsedSpec: ParsedSpec | null;
@@ -10,6 +10,12 @@ interface SpecStore {
   environments: AppEnvironment[];
   activeEnvironmentId: string | null;
   pathParams: Record<string, string>;
+    favorites: string[];
+  savedViews: Record<string, SavedView[]>;
+  addFavorite: (id: string) => void;
+  removeFavorite: (id: string) => void;
+  addSavedView: (path: string, view: SavedView) => void;
+  removeSavedView: (path: string, viewId: string) => void;
   setParsedSpec: (spec: ParsedSpec, source: string) => void;
   clearSpec: () => void;
   addEnvironment: (env: AppEnvironment) => void;
@@ -36,6 +42,8 @@ export const useSpecStore = create<SpecStore>()(
       ],
       activeEnvironmentId: 'default',
       pathParams: {},
+      favorites: [],
+      savedViews: {},
 
       setParsedSpec: (spec, source) => {
         const baseUrl = spec.baseUrl ?? '';
@@ -58,6 +66,24 @@ export const useSpecStore = create<SpecStore>()(
         set((state) => ({ pathParams: { ...state.pathParams, [name]: value } })),
 
       clearPathParams: () => set({ pathParams: {} }),
+
+      addFavorite: (id) =>
+        set((state) => ({ favorites: [...new Set([...state.favorites, id])] })),
+
+      removeFavorite: (id) =>
+        set((state) => ({ favorites: state.favorites.filter((f) => f !== id) })),
+
+      addSavedView: (path, view) =>
+        set((state) => {
+          const views = state.savedViews[path] || [];
+          return { savedViews: { ...state.savedViews, [path]: [...views, view] } };
+        }),
+
+      removeSavedView: (path, viewId) =>
+        set((state) => {
+          const views = state.savedViews[path] || [];
+          return { savedViews: { ...state.savedViews, [path]: views.filter((v) => v.id !== viewId) } };
+        }),
 
       addEnvironment: (env) =>
         set((state) => ({ environments: [...state.environments, env] })),
@@ -89,6 +115,8 @@ export const useSpecStore = create<SpecStore>()(
         environments: state.environments,
         activeEnvironmentId: state.activeEnvironmentId,
         specSource: state.specSource,
+        favorites: state.favorites,
+        savedViews: state.savedViews,
       }),
     }
   )

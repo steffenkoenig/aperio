@@ -85,3 +85,13 @@
 - [x] Document Form Auto-Save -> Docs Updated: Customer, Technical, Support
 **Active Step:** Submit PR
 **Blockers/Constraints:** None. All tests passing cleanly.
+
+## Milestone 1.2 - Saved Views & Favorites
+**Current State Audit:** Verified the codebase (`src/store/spec-store.ts`, `src/components/sidebar-nav.tsx`, `src/components/resource-table.tsx`). Verified `partialize` configuration in Zustand store.
+**Completed Items:**
+- [x] Define `SavedView` type and update Zustand store actions/persistence -> Attached Test: UI manual test
+- [x] Implement Sidebar Favorites UI -> Attached Test: Playwright UI screenshot
+- [x] Implement Table Saved Views UI -> Attached Test: Playwright UI screenshot
+- [x] Document Saved Views & Favorites -> Docs Updated: Customer, Technical, Support
+**Active Step:** Complete pre-commit checks and submit PR.
+**Blockers/Constraints:** None.

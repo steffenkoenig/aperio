@@ -141,3 +141,10 @@ export interface AperioConfig {
   environments: AppEnvironment[];
   activeEnvironmentId?: string;
 }
+
+export interface SavedView {
+  id: string;
+  name: string;
+  sorting: any[];
+  globalFilter: string;
+}

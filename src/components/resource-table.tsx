@@ -169,8 +169,55 @@ export function ResourceTable({ path, pathParams = {} }: ResourceTableProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState('');
+  const [activeViewId, setActiveViewId] = useState('default');
   const [error, setError] = useState<string | null>(null);
-  const { getActiveEnvironment } = useSpecStore();
+  const { getActiveEnvironment, savedViews, addSavedView } = useSpecStore();
+
+
+  const handleSaveView = () => {
+    const viewName = prompt('Enter a name for this view:');
+    if (viewName && viewName.trim() !== '') {
+      const viewId = crypto.randomUUID();
+      addSavedView(path, {
+        id: viewId,
+        name: viewName.trim(),
+        sorting,
+        globalFilter,
+      });
+      toast.success(`View "${viewName}" saved!`);
+    }
+  };
+
+  const handleLoadView = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const viewId = e.target.value;
+    setActiveViewId(viewId);
+    if (viewId === 'default') {
+      setSorting([]);
+      setGlobalFilter('');
+    } else {
+      const view = savedViews[path]?.find((v) => v.id === viewId);
+      if (view) {
+        setSorting(view.sorting);
+        setGlobalFilter(view.globalFilter);
+      }
+    }
+  };
+
+  const currentSavedViews = savedViews[path] || [];
+
+  // Reset active view if user manually changes state
+  useEffect(() => {
+    if (activeViewId !== 'default') {
+      const view = savedViews[path]?.find((v) => v.id === activeViewId);
+      if (view) {
+        const isSameSorting = JSON.stringify(view.sorting) === JSON.stringify(sorting);
+        const isSameFilter = view.globalFilter === globalFilter;
+        if (!isSameSorting || !isSameFilter) {
+          setActiveViewId('default');
+        }
+      }
+    }
+  }, [sorting, globalFilter, activeViewId, path, savedViews]);
 
   const resolvedPath = path.replace(/\{([^}]+)\}/g, (_, key: string) => pathParams[key] ?? `:${key}`);
 
@@ -273,6 +320,24 @@ export function ResourceTable({ path, pathParams = {} }: ResourceTableProps) {
 
   return (
     <div className="space-y-3">
+
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <div className="flex items-center gap-2">
+          <select
+            value={activeViewId}
+            onChange={handleLoadView}
+            className="h-8 text-sm border rounded-md px-2 py-1 bg-background"
+          >
+            <option value="default">Default View</option>
+            {currentSavedViews.map((v) => (
+              <option key={v.id} value={v.id}>{v.name}</option>
+            ))}
+          </select>
+          <Button variant="outline" size="sm" className="h-8" onClick={handleSaveView}>
+            Save View
+          </Button>
+        </div>
+      </div>
       <div className="flex items-center gap-2">
         <div className="relative flex-1 max-w-xs">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
