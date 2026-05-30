@@ -47,3 +47,16 @@
     5. `docs/proposals/proposal-08-offline-pwa-support.md`
     6. `docs/proposals/proposal-09-bulk-operations.md`
     7. `.jules/builder.md` (this file)
+
+---
+
+## Milestone 1.1 - Command Palette & Form Auto-Save
+**Current State Audit:** Baseline codebase verified. `cmdk` package is installed. Proposal 04 (Command Palette) and Proposal 05 (Form Auto-Save) logic is well-defined. UI scaffolding for layout and resource form are intact.
+**Completed Items:**
+- [x] Create Command Palette Component -> Attached Test: `CommandPalette` suite
+- [x] Integrate Command Palette into Layout -> Layout tested manually
+- [x] Document Command Palette -> Docs Updated: Customer, Technical, Support
+- [x] Implement Form Auto-Save -> Attached Test: `ResourceForm Auto-Save` suite
+- [x] Document Form Auto-Save -> Docs Updated: Customer, Technical, Support
+**Active Step:** Submit PR
+**Blockers/Constraints:** None. All tests passing cleanly.
