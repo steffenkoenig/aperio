@@ -19,6 +19,11 @@ interface SpecStore {
   getActiveEnvironment: () => AppEnvironment | null;
   setPathParam: (name: string, value: string) => void;
   clearPathParams: () => void;
+  favorites: Record<string, string[]>;
+  savedViews: Record<string, Record<string, Record<string, unknown>>>;
+  toggleFavorite: (slug: string) => void;
+  saveTableView: (path: string, viewName: string, state: Record<string, unknown>) => void;
+  deleteTableView: (path: string, viewName: string) => void;
 }
 
 export const useSpecStore = create<SpecStore>()(
@@ -36,6 +41,63 @@ export const useSpecStore = create<SpecStore>()(
       ],
       activeEnvironmentId: 'default',
       pathParams: {},
+      favorites: {},
+      savedViews: {},
+
+      toggleFavorite: (slug) =>
+        set((state) => {
+          if (!state.specSource) return state;
+          const currentFavs = state.favorites[state.specSource] || [];
+          const isFav = currentFavs.includes(slug);
+          const newFavs = isFav
+            ? currentFavs.filter((f) => f !== slug)
+            : [...currentFavs, slug];
+
+          return {
+            favorites: {
+              ...state.favorites,
+              [state.specSource]: newFavs,
+            },
+          };
+        }),
+
+      saveTableView: (path, viewName, viewState) =>
+        set((state) => {
+          if (!state.specSource) return state;
+          const currentViews = state.savedViews[state.specSource] || {};
+          const pathViews = currentViews[path] || {};
+
+          return {
+            savedViews: {
+              ...state.savedViews,
+              [state.specSource]: {
+                ...currentViews,
+                [path]: {
+                  ...pathViews,
+                  [viewName]: viewState,
+                },
+              },
+            },
+          };
+        }),
+
+      deleteTableView: (path, viewName) =>
+        set((state) => {
+          if (!state.specSource) return state;
+          const currentViews = state.savedViews[state.specSource] || {};
+          const pathViews = { ...currentViews[path] };
+          delete pathViews[viewName];
+
+          return {
+            savedViews: {
+              ...state.savedViews,
+              [state.specSource]: {
+                ...currentViews,
+                [path]: pathViews,
+              },
+            },
+          };
+        }),
 
       setParsedSpec: (spec, source) => {
         const baseUrl = spec.baseUrl ?? '';
@@ -89,6 +151,8 @@ export const useSpecStore = create<SpecStore>()(
         environments: state.environments,
         activeEnvironmentId: state.activeEnvironmentId,
         specSource: state.specSource,
+        favorites: state.favorites,
+        savedViews: state.savedViews,
       }),
     }
   )

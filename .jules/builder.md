@@ -19,6 +19,19 @@
 
 ---
 
+## Milestone 1.2 - Saved Views & Favorites
+**Current State Audit:** Evaluated current state. Verified that `spec-store` relies on Zustand and correctly persists to `localStorage`. `ResourceTable` natively uses TanStack table which supports modular feature states. `SidebarNav` uses a hierarchical `ResourceNode` rendering model.
+**Completed Items:**
+- [x] Implement persistence layer in `spec-store` for `favorites` and `savedViews`. -> Attached Test: `spec-store` unit tests
+- [x] Inject Favorite button into `ResourcePage` header. -> Manual test
+- [x] Inject Favorites sidebar section into `SidebarNav`. -> Manual test
+- [x] Update `ResourceTable` to support state saving via dropdown and Shadcn Dialog. -> Manual test
+- [x] Update Documentation across all three targets. -> Docs Updated: Customer, Technical, Support
+**Active Step:** Final test suite execution and pre-commit checks.
+**Blockers/Constraints:** None.
+
+---
+
 ## Milestone 1.0 - Integrate `@rjsf/core` in `ResourceForm`
 
 **Current State Audit:** Completed `@rjsf/core` migration. Resolved all module transpilation errors in Jest. Fixed critical $ref resolution bug where nested arrays in `schema-resolver.ts` were failing, causing rendering crashes. Tests assert tuple parsing correctly maps over arrays instead of mutating them.

@@ -9,12 +9,23 @@ import {
   flexRender,
   createColumnHelper,
   SortingState,
+  VisibilityState,
+  ColumnFiltersState,
 } from '@tanstack/react-table';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { ArrowUpDown, Loader2, RefreshCw, Search, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { ArrowUpDown, Loader2, RefreshCw, Search, ChevronDown, ChevronUp, Save, Trash2 } from 'lucide-react';
 import { useSpecStore } from '@/store/spec-store';
 import { extractPathParamNames } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -169,10 +180,19 @@ export function ResourceTable({ path, pathParams = {} }: ResourceTableProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState('');
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [error, setError] = useState<string | null>(null);
-  const { getActiveEnvironment } = useSpecStore();
+  const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
+  const [newViewName, setNewViewName] = useState('');
+
+  const { getActiveEnvironment, savedViews, specSource, saveTableView, deleteTableView } = useSpecStore();
+  const [activeViewName, setActiveViewName] = useState('');
 
   const resolvedPath = path.replace(/\{([^}]+)\}/g, (_, key: string) => pathParams[key] ?? `:${key}`);
+
+  const currentSavedViews = specSource && savedViews[specSource] ? savedViews[specSource][path] || {} : {};
+  const savedViewNames = Object.keys(currentSavedViews);
 
   // Detect any path params that haven't been filled in yet
   const pathParamNames = extractPathParamNames(path);
@@ -241,13 +261,67 @@ export function ResourceTable({ path, pathParams = {} }: ResourceTableProps) {
   const table = useReactTable({
     data,
     columns,
-    state: { sorting, globalFilter },
+    state: { sorting, globalFilter, columnVisibility, columnFilters },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
+    onColumnVisibilityChange: setColumnVisibility,
+    onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
   });
+
+  const handleSaveView = () => {
+    if (!newViewName.trim()) {
+      toast.error('Please enter a view name');
+      return;
+    }
+
+    saveTableView(path, newViewName.trim(), {
+      sorting,
+      columnVisibility,
+      globalFilter,
+      columnFilters,
+    });
+
+    setIsSaveDialogOpen(false);
+    setNewViewName('');
+    toast.success(`View "${newViewName}" saved`);
+  };
+
+  const handleLoadView = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const viewName = e.target.value;
+    setActiveViewName(viewName);
+
+    if (viewName === '') {
+      setSorting([]);
+      setGlobalFilter('');
+      setColumnVisibility({});
+      setColumnFilters([]);
+      return;
+    }
+
+    const viewState = currentSavedViews[viewName];
+    if (viewState) {
+      setSorting(viewState.sorting as SortingState || []);
+      setGlobalFilter(viewState.globalFilter as string || '');
+      setColumnVisibility(viewState.columnVisibility as VisibilityState || {});
+      setColumnFilters(viewState.columnFilters as ColumnFiltersState || []);
+      toast.success(`Loaded view "${viewName}"`);
+    }
+  };
+
+  const handleDeleteView = () => {
+    if (activeViewName) {
+      deleteTableView(path, activeViewName);
+      toast.success(`Deleted view "${activeViewName}"`);
+      setActiveViewName('');
+      setSorting([]);
+      setGlobalFilter('');
+      setColumnVisibility({});
+      setColumnFilters([]);
+    }
+  };
 
   if (missingParams.length > 0) {
     return (
@@ -273,8 +347,8 @@ export function ResourceTable({ path, pathParams = {} }: ResourceTableProps) {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <div className="relative flex-1 max-w-xs">
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="relative flex-1 min-w-[200px] max-w-xs">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
             className="pl-8 h-8 text-sm"
@@ -283,6 +357,59 @@ export function ResourceTable({ path, pathParams = {} }: ResourceTableProps) {
             onChange={(e) => setGlobalFilter(e.target.value)}
           />
         </div>
+
+        {savedViewNames.length > 0 && (
+          <div className="flex items-center gap-1">
+            <select
+              className="h-8 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+              onChange={handleLoadView}
+              value={activeViewName}
+            >
+              <option value="">Default View</option>
+              {savedViewNames.map(name => (
+                <option key={name} value={name}>{name}</option>
+              ))}
+            </select>
+            {activeViewName && (
+              <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive" onClick={handleDeleteView} title="Delete active view">
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        )}
+
+        <Dialog open={isSaveDialogOpen} onOpenChange={setIsSaveDialogOpen}>
+          <DialogTrigger asChild>
+            <Button size="sm" variant="outline" className="h-8" title="Save current table configuration">
+              <Save className="h-3.5 w-3.5 mr-1" />
+              Save View
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Save Table View</DialogTitle>
+              <DialogDescription>
+                Save the current sorting, columns visibility, and filters for quick access later.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">View Name</label>
+                <Input
+                  placeholder="e.g. Active Users, High Priority..."
+                  value={newViewName}
+                  onChange={(e) => setNewViewName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSaveView()}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsSaveDialogOpen(false)}>Cancel</Button>
+              <Button onClick={handleSaveView}>Save View</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         <Button size="sm" variant="outline" onClick={() => void fetchData()} disabled={isLoading} className="h-8">
           {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
           Refresh

@@ -4,7 +4,8 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ResourceNode } from '@/lib/types';
-import { ChevronRight, Database, Zap, Box, FolderOpen, Folder } from 'lucide-react';
+import { ChevronRight, Database, Zap, Box, FolderOpen, Folder, Star } from 'lucide-react';
+import { useSpecStore } from '@/store/spec-store';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -110,7 +111,25 @@ function NavItem({ node, depth }: NavItemProps) {
   );
 }
 
+function flattenNodes(nodes: ResourceNode[]): ResourceNode[] {
+  let flat: ResourceNode[] = [];
+  for (const node of nodes) {
+    flat.push(node);
+    if (node.children) {
+      flat = flat.concat(flattenNodes(node.children));
+    }
+  }
+  return flat;
+}
+
 export function SidebarNav({ nodes, specTitle }: SidebarNavProps) {
+  const { favorites, specSource } = useSpecStore();
+  const currentFavorites = specSource ? favorites[specSource] || [] : [];
+  const flatNodes = flattenNodes(nodes);
+  const favoriteNodes = currentFavorites
+    .map((slug) => flatNodes.find((n) => n.slug === slug))
+    .filter((n): n is ResourceNode => n !== undefined);
+
   return (
     <aside className="flex flex-col w-64 border-r bg-background h-full">
       <div className="p-4 border-b">
@@ -133,6 +152,20 @@ export function SidebarNav({ nodes, specTitle }: SidebarNavProps) {
             Overview
           </Link>
           <div className="h-px bg-border my-2" />
+
+          {favoriteNodes.length > 0 && (
+            <div className="mb-4">
+              <div className="px-2 py-1 flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
+                Favorites
+              </div>
+              {favoriteNodes.map((node) => (
+                <NavItem key={`fav-${node.id}`} node={{ ...node, children: [] }} depth={0} />
+              ))}
+              <div className="h-px bg-border my-2" />
+            </div>
+          )}
+
           {nodes.map((node) => (
             <NavItem key={node.id} node={node} depth={0} />
           ))}
