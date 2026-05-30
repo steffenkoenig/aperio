@@ -4,10 +4,11 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ResourceNode } from '@/lib/types';
-import { ChevronRight, Database, Zap, Box, FolderOpen, Folder } from 'lucide-react';
+import { ChevronRight, Database, Zap, Box, FolderOpen, Folder, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useSpecStore } from '@/store/spec-store';
 
 interface SidebarNavProps {
   nodes: ResourceNode[];
@@ -43,6 +44,9 @@ interface NavItemProps {
 }
 
 function NavItem({ node, depth }: NavItemProps) {
+  const { specSource, preferences, toggleFavorite } = useSpecStore();
+  const isFavorited = specSource && preferences[specSource]?.favorites?.includes(node.path);
+
   const pathname = usePathname();
   const [expanded, setExpanded] = useState(true);
   const hasChildren = node.children.length > 0;
@@ -79,6 +83,18 @@ function NavItem({ node, depth }: NavItemProps) {
         <Link href={nodeHref} className="flex-1 truncate">
           {node.name}
         </Link>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleFavorite(node.path);
+          }}
+          className={cn(
+            "p-0.5 rounded transition-opacity",
+            isFavorited ? "opacity-100 text-yellow-500 hover:text-yellow-600" : "opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <Star className={cn("h-3 w-3", isFavorited && "fill-current")} />
+        </button>
         {nonGetMethods.length > 0 && (
           <div className="flex gap-0.5">
             {nonGetMethods.slice(0, 2).map((m) => (
@@ -111,6 +127,23 @@ function NavItem({ node, depth }: NavItemProps) {
 }
 
 export function SidebarNav({ nodes, specTitle }: SidebarNavProps) {
+  const { specSource, preferences } = useSpecStore();
+  const currentFavorites = (specSource && preferences[specSource]?.favorites) || [];
+
+  // Helper to find a node by path
+  const findNodeByPath = (nodeList: ResourceNode[], targetPath: string): ResourceNode | undefined => {
+    for (const node of nodeList) {
+      if (node.path === targetPath) return node;
+      const found = findNodeByPath(node.children, targetPath);
+      if (found) return found;
+    }
+    return undefined;
+  };
+
+  const favoriteNodes = currentFavorites
+    .map(path => findNodeByPath(nodes, path))
+    .filter((node): node is ResourceNode => node !== undefined);
+
   return (
     <aside className="flex flex-col w-64 border-r bg-background h-full">
       <div className="p-4 border-b">
@@ -133,6 +166,17 @@ export function SidebarNav({ nodes, specTitle }: SidebarNavProps) {
             Overview
           </Link>
           <div className="h-px bg-border my-2" />
+          {favoriteNodes.length > 0 && (
+            <div className="mb-4">
+              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                <Star className="h-3 w-3 fill-current text-yellow-500" /> Favorites
+              </div>
+              {favoriteNodes.map((node) => (
+                <NavItem key={`fav-${node.id}`} node={node} depth={0} />
+              ))}
+              <div className="h-px bg-border my-2" />
+            </div>
+          )}
           {nodes.map((node) => (
             <NavItem key={node.id} node={node} depth={0} />
           ))}
