@@ -2,7 +2,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { ParsedSpec, AppEnvironment } from '@/lib/types';
+import { ParsedSpec, AppEnvironment, Bookmark } from '@/lib/types';
 
 interface SpecStore {
   parsedSpec: ParsedSpec | null;
@@ -10,6 +10,8 @@ interface SpecStore {
   environments: AppEnvironment[];
   activeEnvironmentId: string | null;
   pathParams: Record<string, string>;
+  bookmarks: Bookmark[];
+  activeBookmark: Bookmark | null;
   setParsedSpec: (spec: ParsedSpec, source: string) => void;
   clearSpec: () => void;
   addEnvironment: (env: AppEnvironment) => void;
@@ -19,6 +21,10 @@ interface SpecStore {
   getActiveEnvironment: () => AppEnvironment | null;
   setPathParam: (name: string, value: string) => void;
   clearPathParams: () => void;
+  addBookmark: (bookmark: Bookmark) => void;
+  removeBookmark: (id: string) => void;
+  setActiveBookmark: (bookmark: Bookmark) => void;
+  clearActiveBookmark: () => void;
 }
 
 export const useSpecStore = create<SpecStore>()(
@@ -36,6 +42,8 @@ export const useSpecStore = create<SpecStore>()(
       ],
       activeEnvironmentId: 'default',
       pathParams: {},
+      bookmarks: [],
+      activeBookmark: null,
 
       setParsedSpec: (spec, source) => {
         const baseUrl = spec.baseUrl ?? '';
@@ -82,6 +90,11 @@ export const useSpecStore = create<SpecStore>()(
         const { environments, activeEnvironmentId } = get();
         return environments.find((e) => e.id === activeEnvironmentId) ?? null;
       },
+
+      addBookmark: (bookmark) => set((state) => ({ bookmarks: [...state.bookmarks, bookmark] })),
+      removeBookmark: (id) => set((state) => ({ bookmarks: state.bookmarks.filter((b) => b.id !== id) })),
+      setActiveBookmark: (bookmark) => set({ activeBookmark: bookmark }),
+      clearActiveBookmark: () => set({ activeBookmark: null }),
     }),
     {
       name: 'aperio-store',
@@ -89,6 +102,7 @@ export const useSpecStore = create<SpecStore>()(
         environments: state.environments,
         activeEnvironmentId: state.activeEnvironmentId,
         specSource: state.specSource,
+        bookmarks: state.bookmarks,
       }),
     }
   )

@@ -19,6 +19,20 @@
 
 ---
 
+## Milestone 2.1 - Saved Bookmarks
+
+**Current State Audit:** Evaluated UI and store configuration requirements.
+**Completed Items:**
+- [x] Update Type Definitions -> `src/lib/types.ts`
+- [x] Update Zustand Store with Persistor Logic -> `src/store/spec-store.ts`
+- [x] Create BookmarkSaveDialog and BookmarksPanel -> `src/components/`
+- [x] Integrate components into ResourceTable and ResourceForm
+- [x] Documentation Updates: Customer, Technical, Support -> `/docs/`
+**Active Step:** Automated Testing & Pre-commit
+**Blockers/Constraints:** None.
+
+---
+
 ## Milestone 1.0 - Integrate `@rjsf/core` in `ResourceForm`
 
 **Current State Audit:** Completed `@rjsf/core` migration. Resolved all module transpilation errors in Jest. Fixed critical $ref resolution bug where nested arrays in `schema-resolver.ts` were failing, causing rendering crashes. Tests assert tuple parsing correctly maps over arrays instead of mutating them.

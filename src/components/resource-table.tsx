@@ -17,10 +17,12 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowUpDown, Loader2, RefreshCw, Search, ChevronDown, ChevronUp } from 'lucide-react';
 import { useSpecStore } from '@/store/spec-store';
 import { extractPathParamNames } from '@/lib/utils';
+import { BookmarkSaveDialog } from '@/components/bookmark-save-dialog';
 import { toast } from 'sonner';
 
 interface ResourceTableProps {
   path: string;
+  slug: string;
   pathParams?: Record<string, string>;
 }
 
@@ -164,13 +166,29 @@ function inferColumns(data: Record<string, unknown>[]) {
   );
 }
 
-export function ResourceTable({ path, pathParams = {} }: ResourceTableProps) {
+export function ResourceTable({ path, slug, pathParams = {} }: ResourceTableProps) {
   const [data, setData] = useState<Record<string, unknown>[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const { getActiveEnvironment } = useSpecStore();
+  const { getActiveEnvironment, activeBookmark, clearActiveBookmark, setPathParam } = useSpecStore();
+
+  useEffect(() => {
+    if (activeBookmark && activeBookmark.type === 'table' && activeBookmark.slug === slug) {
+      if (activeBookmark.globalFilter !== undefined) {
+        setGlobalFilter(activeBookmark.globalFilter);
+      }
+
+      if (activeBookmark.pathParams) {
+        Object.entries(activeBookmark.pathParams).forEach(([key, val]) => {
+          setPathParam(key, val);
+        });
+      }
+
+      clearActiveBookmark();
+    }
+  }, [activeBookmark, slug, setPathParam, clearActiveBookmark]);
 
   const resolvedPath = path.replace(/\{([^}]+)\}/g, (_, key: string) => pathParams[key] ?? `:${key}`);
 
@@ -287,6 +305,12 @@ export function ResourceTable({ path, pathParams = {} }: ResourceTableProps) {
           {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
           Refresh
         </Button>
+        <BookmarkSaveDialog
+          type="table"
+          path={path}
+          slug={slug}
+          globalFilter={globalFilter}
+        />
         <Badge variant="outline" className="text-xs">
           {isLoading ? '...' : `${table.getFilteredRowModel().rows.length} rows`}
         </Badge>
