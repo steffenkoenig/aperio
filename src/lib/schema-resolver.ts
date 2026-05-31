@@ -33,6 +33,83 @@ function mergeSchemas(base: SchemaObject, override: SchemaObject): SchemaObject 
  * Fully resolve a SchemaObject, following $ref and merging allOf/anyOf/oneOf.
  * Returns a new SchemaObject with all properties merged at the top level.
  */
+function resolveAllOf(
+  schema: SchemaObject,
+  components: Components,
+  visited: Set<string>
+): SchemaObject {
+  let result: SchemaObject = { ...schema };
+  if (schema.allOf && schema.allOf.length > 0) {
+    for (const sub of schema.allOf) {
+      const resolved = resolveSchema(sub, components, visited);
+      result = mergeSchemas(result, resolved);
+    }
+    result = { ...result, allOf: undefined };
+  }
+  return result;
+}
+
+function resolveAnyOfOneOf(
+  schema: SchemaObject,
+  components: Components,
+  visited: Set<string>
+): SchemaObject {
+  let result: SchemaObject = { ...schema };
+  for (const key of ['anyOf', 'oneOf'] as const) {
+    const variants = schema[key];
+    if (variants && variants.length > 0) {
+      for (const sub of variants) {
+        const resolved = resolveSchema(sub, components, visited);
+        result = mergeSchemas(result, resolved);
+      }
+      result = { ...result, [key]: undefined };
+    }
+  }
+  return result;
+}
+
+function resolveProperties(
+  schema: SchemaObject,
+  components: Components,
+  visited: Set<string>
+): SchemaObject {
+  let result: SchemaObject = { ...schema };
+  if (result.properties) {
+    const resolvedProps: Record<string, SchemaObject> = {};
+    for (const [name, propSchema] of Object.entries(result.properties)) {
+      resolvedProps[name] = resolveSchema(propSchema, components, visited);
+    }
+    result = { ...result, properties: resolvedProps };
+  }
+  return result;
+}
+
+function resolveItems(
+  schema: SchemaObject,
+  components: Components,
+  visited: Set<string>
+): SchemaObject {
+  let result: SchemaObject = { ...schema };
+  if (result.items) {
+    if (Array.isArray(result.items)) {
+      result = {
+        ...result,
+        items: (result.items as SchemaObject[]).map(item => resolveSchema(item, components, visited)) as unknown as SchemaObject
+      };
+    } else {
+      result = {
+        ...result,
+        items: resolveSchema(result.items as SchemaObject, components, visited)
+      };
+    }
+  }
+  return result;
+}
+
+/**
+ * Fully resolve a SchemaObject, following $ref and merging allOf/anyOf/oneOf.
+ * Returns a new SchemaObject with all properties merged at the top level.
+ */
 export function resolveSchema(
   schema: SchemaObject,
   components: Components,
@@ -53,56 +130,10 @@ export function resolveSchema(
 
   let result: SchemaObject = { ...schema };
 
-  // Merge allOf schemas (all constraints apply).
-  // We use the same visited set, adding and removing $refs as we traverse,
-  // so siblings don't block each other from resolving the same $ref, while
-  // still inheriting the ancestors' visited refs to break cycles.
-  if (schema.allOf && schema.allOf.length > 0) {
-    for (const sub of schema.allOf) {
-      const resolved = resolveSchema(sub, components, visited);
-      result = mergeSchemas(result, resolved);
-    }
-    // allOf is consumed, remove it from result to avoid double-processing
-    result = { ...result, allOf: undefined };
-  }
-
-  // Merge anyOf/oneOf schemas (show all possible fields).
-  // Same sibling-isolation reasoning as allOf above.
-  for (const key of ['anyOf', 'oneOf'] as const) {
-    const variants = schema[key];
-    if (variants && variants.length > 0) {
-      for (const sub of variants) {
-        const resolved = resolveSchema(sub, components, visited);
-        result = mergeSchemas(result, resolved);
-      }
-      result = { ...result, [key]: undefined };
-    }
-  }
-
-  // Recursively resolve nested properties.
-  if (result.properties) {
-    const resolvedProps: Record<string, SchemaObject> = {};
-    for (const [name, propSchema] of Object.entries(result.properties)) {
-      resolvedProps[name] = resolveSchema(propSchema, components, visited);
-    }
-    result = { ...result, properties: resolvedProps };
-  }
-
-  // Recursively resolve nested items (arrays or single schema)
-  if (result.items) {
-    if (Array.isArray(result.items)) {
-      result = {
-        ...result,
-        items: (result.items as SchemaObject[]).map(item => resolveSchema(item, components, visited)) as unknown as SchemaObject
-      };
-    } else {
-      result = {
-        ...result,
-        items: resolveSchema(result.items as SchemaObject, components, visited)
-      };
-    }
-  }
+  result = resolveAllOf(result, components, visited);
+  result = resolveAnyOfOneOf(result, components, visited);
+  result = resolveProperties(result, components, visited);
+  result = resolveItems(result, components, visited);
 
   return result;
-
 }

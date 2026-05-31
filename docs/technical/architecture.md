@@ -9,3 +9,7 @@ For `ResourceForm` validation rules, `schema-resolver.ts` is responsible for tra
 As of Version 0.1.1, the `resolveSchema` method explicitly traverses down into array `items` definitions. This allows the `@rjsf/core` view engine to construct inline sub-forms for complex arrays.
 
 **Tuple handling**: If a schema defines `items` as an Array (representing a tuple with heterogeneous positional schemas), the resolver maps over each item individually to resolve its $refs, preserving the exact multi-type definition for downstream RJSF rendering.
+
+## Code Quality & Linting
+- Refactored frontend components to eliminate strict `any`-type violations, replacing them with strongly typed interfaces.
+- Cleared unused variables in error handling blocks to enforce pristine catch evaluations without memory leaks.

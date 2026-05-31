@@ -1,105 +1,99 @@
 import { useSpecStore } from './spec-store';
-import { ParsedSpec, AppEnvironment } from '@/lib/types';
+import { ParsedSpec, SavedView } from '../lib/types';
 
-describe('spec-store', () => {
+describe('useSpecStore - Favorites and Saved Views', () => {
+  const dummySpec: ParsedSpec = {
+    raw: { openapi: '3.0.0', info: { title: 'Test', version: '1' }, paths: {} },
+    resourceTree: [],
+    title: 'Test',
+    version: '1',
+    tags: []
+  };
+
   beforeEach(() => {
-    // Reset the store state before each test
     useSpecStore.setState({
       parsedSpec: null,
       specSource: null,
-      environments: [
-        {
-          id: 'default',
-          name: 'Default',
-          baseUrl: '',
-          authType: 'none',
-        },
-      ],
+      environments: [],
       activeEnvironmentId: 'default',
       pathParams: {},
-      favorites: {},
-      savedViews: {},
+      preferences: {}
     });
   });
 
-  describe('Favorites', () => {
-    it('should add a favorite when not present', () => {
-      useSpecStore.setState({ specSource: 'test-source' });
+  it('should toggle favorites correctly', () => {
+    useSpecStore.getState().setParsedSpec(dummySpec, 'https://example.com/spec.json');
 
-      const { toggleFavorite } = useSpecStore.getState();
-      toggleFavorite('test-slug');
+    // Initial state
+    expect(useSpecStore.getState().preferences['https://example.com/spec.json']?.favorites).toBeUndefined();
 
-      const { favorites } = useSpecStore.getState();
-      expect(favorites['test-source']).toContain('test-slug');
-    });
+    // Toggle on
+    useSpecStore.getState().toggleFavorite('/users');
+    expect(useSpecStore.getState().preferences['https://example.com/spec.json'].favorites).toContain('/users');
 
-    it('should remove a favorite when already present', () => {
-      useSpecStore.setState({
-        specSource: 'test-source',
-        favorites: { 'test-source': ['test-slug'] }
-      });
-
-      const { toggleFavorite } = useSpecStore.getState();
-      toggleFavorite('test-slug');
-
-      const { favorites } = useSpecStore.getState();
-      expect(favorites['test-source']).not.toContain('test-slug');
-    });
-
-    it('should do nothing if specSource is null', () => {
-      const { toggleFavorite } = useSpecStore.getState();
-      toggleFavorite('test-slug');
-
-      const { favorites } = useSpecStore.getState();
-      expect(Object.keys(favorites)).toHaveLength(0);
-    });
+    // Toggle off
+    useSpecStore.getState().toggleFavorite('/users');
+    expect(useSpecStore.getState().preferences['https://example.com/spec.json'].favorites).not.toContain('/users');
   });
 
-  describe('Saved Views', () => {
-    it('should save a new table view', () => {
-      useSpecStore.setState({ specSource: 'test-source' });
+  it('should not throw when toggling favorite without a specSource', () => {
+    // specSource is null in the initial state
+    expect(() => useSpecStore.getState().toggleFavorite('/users')).not.toThrow();
+    expect(useSpecStore.getState().preferences).toEqual({});
+  });
 
-      const { saveTableView } = useSpecStore.getState();
-      const mockState = { sorting: [{ id: 'name', desc: false }] };
-      saveTableView('/test-path', 'My View', mockState);
+  it('should not throw when saving view without a specSource', () => {
+    const view: SavedView = {
+      id: 'v1',
+      name: 'Test',
+      resourcePath: '/users',
+      columnVisibility: {},
+      globalFilter: '',
+      sorting: []
+    };
+    expect(() => useSpecStore.getState().saveView(view)).not.toThrow();
+    expect(useSpecStore.getState().preferences).toEqual({});
+  });
 
-      const { savedViews } = useSpecStore.getState();
-      expect(savedViews['test-source']['/test-path']['My View']).toEqual(mockState);
-    });
+  it('should update an existing view when saving with same id', () => {
+    useSpecStore.getState().setParsedSpec(dummySpec, 'https://example.com/spec.json');
 
-    it('should delete an existing table view', () => {
-      useSpecStore.setState({
-        specSource: 'test-source',
-        savedViews: {
-          'test-source': {
-            '/test-path': {
-              'My View': { sorting: [] }
-            }
-          }
-        }
-      });
+    const view: SavedView = {
+      id: 'v1',
+      name: 'Original',
+      resourcePath: '/users',
+      columnVisibility: {},
+      globalFilter: '',
+      sorting: []
+    };
 
-      const { deleteTableView } = useSpecStore.getState();
-      deleteTableView('/test-path', 'My View');
+    useSpecStore.getState().saveView(view);
+    useSpecStore.getState().saveView({ ...view, name: 'Updated' });
 
-      const { savedViews } = useSpecStore.getState();
-      expect(savedViews['test-source']['/test-path']['My View']).toBeUndefined();
-    });
+    const views = useSpecStore.getState().preferences['https://example.com/spec.json'].savedViews;
+    expect(views).toHaveLength(1);
+    expect(views[0].name).toBe('Updated');
+  });
 
-    it('should do nothing if specSource is null when saving a view', () => {
-      const { saveTableView } = useSpecStore.getState();
-      saveTableView('/test-path', 'My View', {});
+  it('should save and delete custom views correctly', () => {
+    useSpecStore.getState().setParsedSpec(dummySpec, 'https://example.com/spec.json');
 
-      const { savedViews } = useSpecStore.getState();
-      expect(Object.keys(savedViews)).toHaveLength(0);
-    });
+    const view: SavedView = {
+      id: 'v1',
+      name: 'Test View',
+      resourcePath: '/users',
+      columnVisibility: { email: false },
+      globalFilter: 'test',
+      sorting: []
+    };
 
-    it('should do nothing if specSource is null when deleting a view', () => {
-       const { deleteTableView } = useSpecStore.getState();
-       deleteTableView('/test-path', 'My View');
+    // Save view
+    useSpecStore.getState().saveView(view);
+    expect(useSpecStore.getState().preferences['https://example.com/spec.json'].savedViews).toHaveLength(1);
+    expect(useSpecStore.getState().preferences['https://example.com/spec.json'].savedViews[0]).toEqual(view);
 
-       const { savedViews } = useSpecStore.getState();
-       expect(Object.keys(savedViews)).toHaveLength(0);
-    });
+    // Delete view
+    useSpecStore.getState().deleteView('v1');
+    expect(useSpecStore.getState().preferences['https://example.com/spec.json'].savedViews).toHaveLength(0);
   });
 });

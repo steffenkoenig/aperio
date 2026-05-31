@@ -2,7 +2,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { ParsedSpec, AppEnvironment } from '@/lib/types';
+import { ParsedSpec, AppEnvironment, SpecPreferences, SavedView } from '@/lib/types';
 
 interface SpecStore {
   parsedSpec: ParsedSpec | null;
@@ -19,11 +19,11 @@ interface SpecStore {
   getActiveEnvironment: () => AppEnvironment | null;
   setPathParam: (name: string, value: string) => void;
   clearPathParams: () => void;
-  favorites: Record<string, string[]>;
-  savedViews: Record<string, Record<string, Record<string, unknown>>>;
-  toggleFavorite: (slug: string) => void;
-  saveTableView: (path: string, viewName: string, state: Record<string, unknown>) => void;
-  deleteTableView: (path: string, viewName: string) => void;
+  preferences: Record<string, SpecPreferences>;
+  toggleFavorite: (resourcePath: string) => void;
+  saveView: (view: SavedView) => void;
+  deleteView: (viewId: string) => void;
+
 }
 
 export const useSpecStore = create<SpecStore>()(
@@ -41,63 +41,7 @@ export const useSpecStore = create<SpecStore>()(
       ],
       activeEnvironmentId: 'default',
       pathParams: {},
-      favorites: {},
-      savedViews: {},
-
-      toggleFavorite: (slug) =>
-        set((state) => {
-          if (!state.specSource) return state;
-          const currentFavs = state.favorites[state.specSource] || [];
-          const isFav = currentFavs.includes(slug);
-          const newFavs = isFav
-            ? currentFavs.filter((f) => f !== slug)
-            : [...currentFavs, slug];
-
-          return {
-            favorites: {
-              ...state.favorites,
-              [state.specSource]: newFavs,
-            },
-          };
-        }),
-
-      saveTableView: (path, viewName, viewState) =>
-        set((state) => {
-          if (!state.specSource) return state;
-          const currentViews = state.savedViews[state.specSource] || {};
-          const pathViews = currentViews[path] || {};
-
-          return {
-            savedViews: {
-              ...state.savedViews,
-              [state.specSource]: {
-                ...currentViews,
-                [path]: {
-                  ...pathViews,
-                  [viewName]: viewState,
-                },
-              },
-            },
-          };
-        }),
-
-      deleteTableView: (path, viewName) =>
-        set((state) => {
-          if (!state.specSource) return state;
-          const currentViews = state.savedViews[state.specSource] || {};
-          const pathViews = { ...currentViews[path] };
-          delete pathViews[viewName];
-
-          return {
-            savedViews: {
-              ...state.savedViews,
-              [state.specSource]: {
-                ...currentViews,
-                [path]: pathViews,
-              },
-            },
-          };
-        }),
+      preferences: {},
 
       setParsedSpec: (spec, source) => {
         const baseUrl = spec.baseUrl ?? '';
@@ -115,6 +59,64 @@ export const useSpecStore = create<SpecStore>()(
       },
 
       clearSpec: () => set({ parsedSpec: null, specSource: null }),
+
+      toggleFavorite: (resourcePath) =>
+        set((state) => {
+          if (!state.specSource) return state;
+          const currentPrefs = state.preferences[state.specSource] || { favorites: [], savedViews: [] };
+          const isFavorite = currentPrefs.favorites.includes(resourcePath);
+          const newFavorites = isFavorite
+            ? currentPrefs.favorites.filter(p => p !== resourcePath)
+            : [...currentPrefs.favorites, resourcePath];
+
+          return {
+            preferences: {
+              ...state.preferences,
+              [state.specSource]: { ...currentPrefs, favorites: newFavorites }
+            }
+          };
+        }),
+
+      saveView: (view) =>
+        set((state) => {
+          if (!state.specSource) return state;
+          const currentPrefs = state.preferences[state.specSource] || { favorites: [], savedViews: [] };
+
+          // If view with same name and path exists, update it, else add new
+          const existingIndex = currentPrefs.savedViews.findIndex(v => v.id === view.id);
+          let newViews;
+
+          if (existingIndex >= 0) {
+            newViews = [...currentPrefs.savedViews];
+            newViews[existingIndex] = view;
+          } else {
+            newViews = [...currentPrefs.savedViews, view];
+          }
+
+          return {
+            preferences: {
+              ...state.preferences,
+              [state.specSource]: { ...currentPrefs, savedViews: newViews }
+            }
+          };
+        }),
+
+      deleteView: (viewId) =>
+        set((state) => {
+          if (!state.specSource) return state;
+          const currentPrefs = state.preferences[state.specSource];
+          if (!currentPrefs) return state;
+
+          const newViews = currentPrefs.savedViews.filter(v => v.id !== viewId);
+
+          return {
+            preferences: {
+              ...state.preferences,
+              [state.specSource]: { ...currentPrefs, savedViews: newViews }
+            }
+          };
+        }),
+
 
       setPathParam: (name, value) =>
         set((state) => ({ pathParams: { ...state.pathParams, [name]: value } })),
@@ -151,8 +153,7 @@ export const useSpecStore = create<SpecStore>()(
         environments: state.environments,
         activeEnvironmentId: state.activeEnvironmentId,
         specSource: state.specSource,
-        favorites: state.favorites,
-        savedViews: state.savedViews,
+        preferences: state.preferences,
       }),
     }
   )

@@ -302,7 +302,7 @@ export function ResourceForm({ path, method, operation, pathParams = {}, onSucce
           duration: 3000,
         });
       }
-    } catch (e) {
+    } catch {
       // Ignore local storage errors
     }
     setIsDraftLoaded(true);
@@ -318,7 +318,7 @@ export function ResourceForm({ path, method, operation, pathParams = {}, onSucce
         } else {
           localStorage.removeItem(draftKey);
         }
-      } catch (e) {
+      } catch {
         // Ignore local storage errors (quota exceeded, etc)
       }
     }, 500);
@@ -330,7 +330,7 @@ export function ResourceForm({ path, method, operation, pathParams = {}, onSucce
     setFormData({});
     try {
       localStorage.removeItem(draftKey);
-    } catch (e) {}
+    } catch {}
     toast.success('Draft discarded');
   };
 
@@ -389,9 +389,9 @@ export function ResourceForm({ path, method, operation, pathParams = {}, onSucce
         // Clear draft on successful submit
         try {
           localStorage.removeItem(draftKey);
-        } catch (e) {}
+        } catch {}
       } else {
-        const details = typeof result === 'object' && result !== null && 'error' in result ? String((result as any).error) : '';
+        const details = typeof result === 'object' && result !== null && 'error' in result ? String((result as Record<string, unknown>).error) : '';
         const msg = details ? `${res.status}: ${details}` : `${res.status} ${res.statusText || ''}`;
         toast.error(`${method.toUpperCase()} ${resolvedPath} – ${msg}`);
       }
