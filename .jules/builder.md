@@ -96,3 +96,13 @@
 - [x] Document Form Auto-Save -> Docs Updated: Customer, Technical, Support
 **Active Step:** Submit PR
 **Blockers/Constraints:** None. All tests passing cleanly.
+
+---
+
+## Milestone 1.2 - Code Quality & Strict Typing
+**Current State Audit:** Evaluated frontend components. `npm run lint` flagged several warnings for unused variables in try-catch blocks and strict any-type violations.
+**Completed Items:**
+- [x] Refactor `CommandDialog` mock to use strict typings instead of `any` -> Attached Test: `CommandPalette suite`
+- [x] Remove unused exception variables in `ResourceForm` auto-save logic -> Attached Test: `ResourceForm Auto-Save suite`
+**Active Step:** Complete Pre-commit steps and final checks.
+**Blockers/Constraints:** None. All tests passing cleanly and linters passing.
