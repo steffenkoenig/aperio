@@ -1,18 +1,18 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Send, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { OperationObject, SchemaObject } from '@/lib/types';
 import { useSpecStore } from '@/store/spec-store';
 import { resolveSchema } from '@/lib/schema-resolver';
-import { toast } from 'sonner';
-import { cn, extractPathParamNames } from '@/lib/utils';
-import { useResourceDraft } from './hooks/use-resource-draft';
-import { FormField } from './components/form-field';
 
-interface ResourceFormProps {
+import { cn, extractPathParamNames } from '@/lib/utils';
+import { FormField, getSchema } from './fields/form-field';
+import { useResourceForm } from './hooks/useResourceForm';
+
+export interface ResourceFormProps {
   path: string;
   method: string;
   operation: OperationObject;
@@ -20,95 +20,34 @@ interface ResourceFormProps {
   onSuccess?: (data: unknown) => void;
 }
 
-function getSchema(operation: OperationObject): SchemaObject | null {
-  const content = operation.requestBody?.content;
-  if (!content) return null;
-  // We always send JSON, so prefer JSON schema; fall back to urlencoded for field introspection only
-  return (
-    content['application/json']?.schema ??
-    content['application/x-www-form-urlencoded']?.schema ??
-    null
-  );
-}
-
 export function ResourceForm({ path, method, operation, pathParams = {}, onSuccess }: ResourceFormProps) {
-  const [response, setResponse] = useState<unknown>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [showResponse, setShowResponse] = useState(false);
+  const resolvedPath = path.replace(/\{([^}]+)\}/g, (_, key: string) => pathParams[key] ?? `:${key}`);
 
-  const { getActiveEnvironment, parsedSpec } = useSpecStore();
+  const {
+    formData,
+    setFormData,
+    response,
+    isLoading,
+    showResponse,
+    setShowResponse,
+    handleDiscardDraft,
+    handleSubmit,
+    copyAsFetch
+  } = useResourceForm({ path, method, resolvedPath, onSuccess });
 
-  const draftKey = `draft_${parsedSpec?.title ?? 'default'}_${method.toUpperCase()}_${path}`;
-
-  const { formData, setFormData, handleDiscardDraft, clearDraft } = useResourceDraft({ draftKey });
+  const { parsedSpec } = useSpecStore();
 
   const rawSchema = getSchema(operation);
   const components = parsedSpec?.raw.components;
   const schema = useMemo(() => {
     return rawSchema ? resolveSchema(rawSchema, components) : null;
   }, [rawSchema, components]);
-
   const properties = schema?.properties ?? {};
   const required = schema?.required ?? [];
-
-  const resolvedPath = path.replace(/\{([^}]+)\}/g, (_, key: string) => pathParams[key] ?? `:${key}`);
 
   // Detect missing path parameters to disable submit and warn the user
   const pathParamNames = extractPathParamNames(path);
   const missingParams = pathParamNames.filter((name) => !pathParams[name]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const env = getActiveEnvironment();
-    if (!env?.baseUrl) {
-      toast.error('No base URL configured. Set one in Environment settings.');
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const headers: Record<string, string> = {};
-      if (env.authType === 'bearer' && env.authValue) {
-        headers['Authorization'] = `Bearer ${env.authValue}`;
-      } else if (env.authType === 'apiKey' && env.authValue) {
-        headers[env.authHeader ?? 'X-API-Key'] = env.authValue;
-      } else if (env.authType === 'basic' && env.authValue) {
-        headers['Authorization'] = `Basic ${btoa(env.authValue)}`;
-      }
-
-      const res = await fetch('/api/proxy', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          url: `${env.baseUrl}${resolvedPath}`,
-          method: method.toUpperCase(),
-          headers,
-          body: Object.keys(formData).length > 0 ? formData : undefined,
-        }),
-      });
-
-      const result = await res.json() as unknown;
-      setResponse(result);
-      setShowResponse(true);
-
-      if (res.ok) {
-        toast.success(`${method.toUpperCase()} ${resolvedPath} – ${res.status}`);
-        onSuccess?.(result);
-
-        // Clear draft on successful submit
-        clearDraft();
-      } else {
-        const details = typeof result === 'object' && result !== null && 'error' in result ? String((result as Record<string, unknown>).error) : '';
-        const msg = details ? `${res.status}: ${details}` : `${res.status} ${res.statusText || ''}`;
-        toast.error(`${method.toUpperCase()} ${resolvedPath} – ${msg}`);
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Request failed';
-      toast.error(msg);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const methodColor: Record<string, string> = {
     post: 'bg-green-500/10 text-green-600 border-green-500/30',
@@ -178,51 +117,7 @@ export function ResourceForm({ path, method, operation, pathParams = {}, onSucce
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => {
-                const env = getActiveEnvironment();
-                if (!env?.baseUrl) {
-                  toast.error('No base URL configured.');
-                  return;
-                }
-
-                const headers: Record<string, string> = {};
-                const hasBody = Object.keys(formData).length > 0;
-                if (hasBody) {
-                  headers['Content-Type'] = 'application/json';
-                }
-
-                if (env.authType === 'bearer' && env.authValue) {
-                  headers['Authorization'] = `Bearer ${env.authValue}`;
-                } else if (env.authType === 'apiKey' && env.authValue) {
-                  headers[env.authHeader ?? 'X-API-Key'] = env.authValue;
-                } else if (env.authType === 'basic' && env.authValue) {
-                  headers['Authorization'] = `Basic ${btoa(env.authValue)}`;
-                }
-
-                const options: RequestInit = {
-                  method: method.toUpperCase(),
-                  headers,
-                };
-
-                let bodyStr = '';
-                if (hasBody) {
-                  bodyStr = JSON.stringify(formData, null, 2);
-                  options.body = bodyStr;
-                }
-
-                const fetchCode = `fetch('${env.baseUrl}${resolvedPath}', {\n  method: '${options.method}',\n  headers: ${JSON.stringify(options.headers, null, 2).replace(/\n/g, '\n  ')}${bodyStr ? `,\n  body: JSON.stringify(${bodyStr.replace(/\n/g, '\n  ')})` : ''}\n});`;
-
-                if (!navigator.clipboard) {
-                  toast.error('Clipboard API not available in this browser/context');
-                  return;
-                }
-
-                navigator.clipboard.writeText(fetchCode).then(() => {
-                  toast.success('Fetch code copied to clipboard');
-                }).catch(() => {
-                  toast.error('Failed to copy code to clipboard');
-                });
-              }}
+              onClick={() => copyAsFetch()}
               disabled={missingParams.length > 0}
             >
               Copy as Fetch
