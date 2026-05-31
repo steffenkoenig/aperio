@@ -2,7 +2,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { ParsedSpec, AppEnvironment, SavedView } from '@/lib/types';
+import { ParsedSpec, AppEnvironment, Bookmark, SpecPreferences, SavedView } from '@/lib/types';
 
 interface SpecStore {
   parsedSpec: ParsedSpec | null;
@@ -10,9 +10,9 @@ interface SpecStore {
   environments: AppEnvironment[];
   activeEnvironmentId: string | null;
   pathParams: Record<string, string>;
-  favorites: Record<string, string[]>; // Map specKey to list of resource slugs
-  savedViews: Record<string, Record<string, SavedView[]>>; // Map specKey -> resource path -> views
-
+  bookmarks: Bookmark[];
+  activeBookmark: Bookmark | null;
+  preferences: Record<string, SpecPreferences>;
   setParsedSpec: (spec: ParsedSpec, source: string) => void;
   clearSpec: () => void;
   addEnvironment: (env: AppEnvironment) => void;
@@ -22,16 +22,13 @@ interface SpecStore {
   getActiveEnvironment: () => AppEnvironment | null;
   setPathParam: (name: string, value: string) => void;
   clearPathParams: () => void;
-
-  // Favorites
-  toggleFavorite: (specKey: string, slug: string) => void;
-  isFavorite: (specKey: string, slug: string) => boolean;
-  getFavorites: (specKey: string) => string[];
-
-  // Saved Views
-  addSavedView: (specKey: string, path: string, view: SavedView) => void;
-  removeSavedView: (specKey: string, path: string, viewId: string) => void;
-  getSavedViews: (specKey: string, path: string) => SavedView[];
+  addBookmark: (bookmark: Bookmark) => void;
+  removeBookmark: (id: string) => void;
+  setActiveBookmark: (bookmark: Bookmark) => void;
+  clearActiveBookmark: () => void;
+  toggleFavorite: (resourcePath: string) => void;
+  saveView: (view: SavedView) => void;
+  deleteView: (viewId: string) => void;
 }
 
 export const useSpecStore = create<SpecStore>()(
@@ -49,8 +46,9 @@ export const useSpecStore = create<SpecStore>()(
       ],
       activeEnvironmentId: 'default',
       pathParams: {},
-      favorites: {},
-      savedViews: {},
+      bookmarks: [],
+      activeBookmark: null,
+      preferences: {},
 
       setParsedSpec: (spec, source) => {
         const baseUrl = spec.baseUrl ?? '';
@@ -68,6 +66,64 @@ export const useSpecStore = create<SpecStore>()(
       },
 
       clearSpec: () => set({ parsedSpec: null, specSource: null }),
+
+      toggleFavorite: (resourcePath) =>
+        set((state) => {
+          if (!state.specSource) return state;
+          const currentPrefs = state.preferences[state.specSource] || { favorites: [], savedViews: [] };
+          const isFavorite = currentPrefs.favorites.includes(resourcePath);
+          const newFavorites = isFavorite
+            ? currentPrefs.favorites.filter(p => p !== resourcePath)
+            : [...currentPrefs.favorites, resourcePath];
+
+          return {
+            preferences: {
+              ...state.preferences,
+              [state.specSource]: { ...currentPrefs, favorites: newFavorites }
+            }
+          };
+        }),
+
+      saveView: (view) =>
+        set((state) => {
+          if (!state.specSource) return state;
+          const currentPrefs = state.preferences[state.specSource] || { favorites: [], savedViews: [] };
+
+          // If view with same name and path exists, update it, else add new
+          const existingIndex = currentPrefs.savedViews.findIndex(v => v.id === view.id);
+          let newViews;
+
+          if (existingIndex >= 0) {
+            newViews = [...currentPrefs.savedViews];
+            newViews[existingIndex] = view;
+          } else {
+            newViews = [...currentPrefs.savedViews, view];
+          }
+
+          return {
+            preferences: {
+              ...state.preferences,
+              [state.specSource]: { ...currentPrefs, savedViews: newViews }
+            }
+          };
+        }),
+
+      deleteView: (viewId) =>
+        set((state) => {
+          if (!state.specSource) return state;
+          const currentPrefs = state.preferences[state.specSource];
+          if (!currentPrefs) return state;
+
+          const newViews = currentPrefs.savedViews.filter(v => v.id !== viewId);
+
+          return {
+            preferences: {
+              ...state.preferences,
+              [state.specSource]: { ...currentPrefs, savedViews: newViews }
+            }
+          };
+        }),
+
 
       setPathParam: (name, value) =>
         set((state) => ({ pathParams: { ...state.pathParams, [name]: value } })),
@@ -98,62 +154,10 @@ export const useSpecStore = create<SpecStore>()(
         return environments.find((e) => e.id === activeEnvironmentId) ?? null;
       },
 
-      toggleFavorite: (specKey, slug) =>
-        set((state) => {
-          const specFavorites = state.favorites[specKey] || [];
-          const isFav = specFavorites.includes(slug);
-          const newFavorites = isFav
-            ? specFavorites.filter((s) => s !== slug)
-            : [...specFavorites, slug];
-          return {
-            favorites: { ...state.favorites, [specKey]: newFavorites },
-          };
-        }),
-
-      isFavorite: (specKey, slug) => {
-        const { favorites } = get();
-        return (favorites[specKey] || []).includes(slug);
-      },
-
-      getFavorites: (specKey) => {
-        const { favorites } = get();
-        return favorites[specKey] || [];
-      },
-
-      addSavedView: (specKey, path, view) =>
-        set((state) => {
-          const specViews = state.savedViews[specKey] || {};
-          const pathViews = specViews[path] || [];
-          return {
-            savedViews: {
-              ...state.savedViews,
-              [specKey]: {
-                ...specViews,
-                [path]: [...pathViews, view],
-              },
-            },
-          };
-        }),
-
-      removeSavedView: (specKey, path, viewId) =>
-        set((state) => {
-          const specViews = state.savedViews[specKey] || {};
-          const pathViews = specViews[path] || [];
-          return {
-            savedViews: {
-              ...state.savedViews,
-              [specKey]: {
-                ...specViews,
-                [path]: pathViews.filter((v) => v.id !== viewId),
-              },
-            },
-          };
-        }),
-
-      getSavedViews: (specKey, path) => {
-        const { savedViews } = get();
-        return (savedViews[specKey] || {})[path] || [];
-      },
+      addBookmark: (bookmark) => set((state) => ({ bookmarks: [...state.bookmarks, bookmark] })),
+      removeBookmark: (id) => set((state) => ({ bookmarks: state.bookmarks.filter((b) => b.id !== id) })),
+      setActiveBookmark: (bookmark) => set({ activeBookmark: bookmark }),
+      clearActiveBookmark: () => set({ activeBookmark: null }),
     }),
     {
       name: 'aperio-store',
@@ -161,8 +165,8 @@ export const useSpecStore = create<SpecStore>()(
         environments: state.environments,
         activeEnvironmentId: state.activeEnvironmentId,
         specSource: state.specSource,
-        favorites: state.favorites,
-        savedViews: state.savedViews,
+        bookmarks: state.bookmarks,
+        preferences: state.preferences,
       }),
     }
   )

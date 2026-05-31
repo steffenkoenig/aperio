@@ -135,6 +135,18 @@ export interface AppEnvironment {
   authHeader?: string;
 }
 
+export interface Bookmark {
+  id: string;
+  name: string;
+  type: 'table' | 'form';
+  path: string;
+  slug: string;
+  method?: string;
+  pathParams: Record<string, string>;
+  formData?: Record<string, unknown>;
+  globalFilter?: string;
+}
+
 export interface AperioConfig {
   specUrl?: string;
   specContent?: string;
@@ -145,7 +157,13 @@ export interface AperioConfig {
 export interface SavedView {
   id: string;
   name: string;
-  sorting: import("@tanstack/react-table").SortingState;
+  resourcePath: string;
   columnVisibility: Record<string, boolean>;
   globalFilter: string;
+  sorting: { id: string; desc: boolean }[];
+}
+
+export interface SpecPreferences {
+  favorites: string[];
+  savedViews: SavedView[];
 }

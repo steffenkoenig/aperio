@@ -1,31 +1,31 @@
 import { renderHook, act } from '@testing-library/react';
 import { useSpecStore } from '../store/spec-store';
 
+const SPEC_SOURCE = 'https://example.com/spec.json';
+
 describe('useSpecStore - Favorites and Saved Views', () => {
   beforeEach(() => {
     act(() => {
-      useSpecStore.setState({ favorites: {}, savedViews: {} });
+      useSpecStore.setState({ specSource: SPEC_SOURCE, preferences: {} });
     });
   });
 
-  it('should toggle favorites correctly', () => {
+  it('should toggle favorites correctly using preferences', () => {
     const { result } = renderHook(() => useSpecStore());
 
-    expect(result.current.isFavorite('test-api', 'user-slug')).toBe(false);
+    expect(result.current.preferences[SPEC_SOURCE]?.favorites).toBeUndefined();
 
     act(() => {
-      result.current.toggleFavorite('test-api', 'user-slug');
+      result.current.toggleFavorite('/users');
     });
 
-    expect(result.current.isFavorite('test-api', 'user-slug')).toBe(true);
-    expect(result.current.getFavorites('test-api')).toContain('user-slug');
+    expect(result.current.preferences[SPEC_SOURCE]?.favorites).toContain('/users');
 
     act(() => {
-      result.current.toggleFavorite('test-api', 'user-slug');
+      result.current.toggleFavorite('/users');
     });
 
-    expect(result.current.isFavorite('test-api', 'user-slug')).toBe(false);
-    expect(result.current.getFavorites('test-api')).not.toContain('user-slug');
+    expect(result.current.preferences[SPEC_SOURCE]?.favorites).not.toContain('/users');
   });
 
   it('should add and remove saved views correctly', () => {
@@ -34,26 +34,27 @@ describe('useSpecStore - Favorites and Saved Views', () => {
     const mockView = {
       id: '123',
       name: 'Test View',
+      resourcePath: '/users',
       sorting: [],
       columnVisibility: { id: false },
-      globalFilter: 'test'
+      globalFilter: 'test',
     };
 
-    expect(result.current.getSavedViews('test-api', '/users')).toHaveLength(0);
+    expect(result.current.preferences[SPEC_SOURCE]?.savedViews ?? []).toHaveLength(0);
 
     act(() => {
-      result.current.addSavedView('test-api', '/users', mockView);
+      result.current.saveView(mockView);
     });
 
-    const views = result.current.getSavedViews('test-api', '/users');
+    const views = result.current.preferences[SPEC_SOURCE]?.savedViews ?? [];
     expect(views).toHaveLength(1);
     expect(views[0].name).toBe('Test View');
     expect(views[0].columnVisibility).toEqual({ id: false });
 
     act(() => {
-      result.current.removeSavedView('test-api', '/users', '123');
+      result.current.deleteView('123');
     });
 
-    expect(result.current.getSavedViews('test-api', '/users')).toHaveLength(0);
+    expect(result.current.preferences[SPEC_SOURCE]?.savedViews ?? []).toHaveLength(0);
   });
 });

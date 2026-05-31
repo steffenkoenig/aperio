@@ -1,0 +1,10 @@
+src/components/resource-form.tsx:14:interface ResourceFormProps {
+src/components/resource-form.tsx:284:export function ResourceForm({ path, method, operation, pathParams = {}, onSuccess }: ResourceFormProps) {
+src/components/resource-form-autosave.test.tsx:3:import { ResourceForm } from './resource-form';
+src/components/resource-form-autosave.test.tsx:28:describe('ResourceForm Auto-Save', () => {
+src/components/resource-form-autosave.test.tsx:55:    render(<ResourceForm path="/pets" method="POST" operation={mockOperation} />);
+src/components/resource-form-autosave.test.tsx:65:    render(<ResourceForm path="/pets" method="POST" operation={mockOperation} />);
+src/components/resource-form-autosave.test.tsx:88:    render(<ResourceForm path="/pets" method="POST" operation={mockOperation} />);
+src/components/resource-form-autosave.test.tsx:106:    render(<ResourceForm path="/pets" method="POST" operation={mockOperation} />);
+src/app/dashboard/resource/[slug]/page.tsx:6:import { ResourceForm } from '@/components/resource-form';
+src/app/dashboard/resource/[slug]/page.tsx:156:            <ResourceForm

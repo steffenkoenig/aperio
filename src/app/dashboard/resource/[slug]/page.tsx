@@ -3,7 +3,7 @@
 import { use } from 'react';
 import { useSpecStore } from '@/store/spec-store';
 import { ResourceTable } from '@/components/resource-table';
-import { ResourceForm } from '@/components/resource-form';
+import { ResourceForm } from '@/components/resource-form/index';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -38,12 +38,9 @@ interface PageProps {
 export default function ResourcePage({ params }: PageProps) {
   const { slug } = use(params);
   const decodedSlug = decodeURIComponent(slug);
-  const { parsedSpec, pathParams, setPathParam, isFavorite, toggleFavorite } = useSpecStore();
+  const { parsedSpec, pathParams, setPathParam, preferences, specSource, toggleFavorite } = useSpecStore();
 
   if (!parsedSpec) return null;
-
-  const specKey = `${parsedSpec.title}-${parsedSpec.version}`;
-  const isFav = isFavorite(specKey, decodedSlug);
 
   const node = findNodeBySlug(parsedSpec.resourceTree, decodedSlug);
 
@@ -68,6 +65,7 @@ export default function ResourcePage({ params }: PageProps) {
   const mutationMethods = Object.keys(node.operations).filter((m) => m !== 'get');
 
   const defaultTab = hasList ? 'list' : mutationMethods[0] ?? 'info';
+  const isFavorite = specSource && preferences[specSource]?.favorites?.includes(node.path);
 
   return (
     <div className="p-6 max-w-5xl">
@@ -77,13 +75,11 @@ export default function ResourcePage({ params }: PageProps) {
           <TypeIcon className="h-5 w-5 text-muted-foreground" />
           <h1 className="text-xl font-bold">{node.name}</h1>
           <button
-            onClick={() => toggleFavorite(specKey, decodedSlug)}
-            className="p-1 rounded hover:bg-accent/50 text-muted-foreground hover:text-yellow-500 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
-            title={isFav ? 'Remove from favorites' : 'Add to favorites'}
-            aria-label={isFav ? 'Remove from favorites' : 'Add to favorites'}
-            aria-pressed={isFav}
+            onClick={() => toggleFavorite(node.path)}
+            className={`p-1 rounded hover:bg-accent transition-colors ${isFavorite ? 'text-yellow-500' : 'text-muted-foreground'}`}
+            title={isFavorite ? "Remove from Favorites" : "Add to Favorites"}
           >
-            <Star className={`h-5 w-5 ${isFav ? 'fill-yellow-500 text-yellow-500' : ''}`} />
+            <Star className={`h-5 w-5 ${isFavorite ? 'fill-current' : ''}`} />
           </button>
           <Badge variant="outline" className="text-xs font-mono">{node.type}</Badge>
         </div>

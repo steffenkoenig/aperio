@@ -1,28 +1,24 @@
 # Saved Views and Favorites
 
-Aperio allows you to customize your dashboard by pinning frequently used resources and saving your table configurations.
+Aperio makes it easy to quickly access the APIs and configurations you use the most.
 
 ## Favorites
 
-If you find yourself frequently accessing specific endpoints (like `Users` or `Orders`), you can pin them to the top of your sidebar for immediate access.
+If you frequently access specific resources, you can "pin" them to the top of your sidebar for immediate access.
 
-1. Navigate to the resource you want to favorite.
-2. Click the **Star** icon next to the resource name at the top of the page.
-3. The resource will immediately appear under the **Favorites** section at the top of your sidebar navigation.
-4. To remove a favorite, simply click the Star icon again or click it from the Favorites list.
+1. Locate the resource in the standard sidebar navigation.
+2. Click the **Star** icon next to the resource's name.
+3. The resource will immediately appear in the **Favorites** section at the top of the sidebar.
+4. To remove a resource from your Favorites, simply click the Star icon again.
 
 ## Saved Views
 
-Data tables in Aperio can be highly customized. You can sort columns, filter rows globally, and show or hide specific columns to match your needs. Instead of configuring this every time you load the page, you can save your setup as a **Saved View**.
+When working with data tables, you may often find yourself applying the same column filters and sorting preferences. Aperio allows you to save these configurations as a "Saved View".
 
-### Creating a Saved View
-1. Configure your table: use the **Columns** dropdown to hide/show columns, click column headers to sort, and use the search bar to filter.
-2. Click the **Views** dropdown menu above the table.
-3. Select **Save current view...**
-4. Enter a name for your view (e.g., "Active Users" or "Minimal Orders View") and click **Save View**.
+1. Navigate to a resource with a data table (a `GET` request).
+2. Adjust your table by clicking the column headers to sort, or by typing into the global filter search box.
+3. Once your table is configured, click the **Save View** button above the table.
+4. Enter a memorable name for your view when prompted.
+5. You can now quickly recall this configuration at any time using the view dropdown menu next to the Save View button.
 
-### Loading and Managing Views
-- **Load a View**: Open the **Views** dropdown and click on the name of your saved view. The table will instantly update to match your saved configuration.
-- **Delete a View**: Open the **Views** dropdown, hover over the view you want to delete, and click the red trash can icon.
-
-*Note: Your favorites and saved views are stored locally in your browser and are specific to the current OpenAPI specification you have loaded.*
+*Note: Saved Views are specific to each API endpoint. Your views for the "Users" endpoint will not appear on the "Orders" endpoint.*

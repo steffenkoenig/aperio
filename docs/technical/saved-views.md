@@ -1,49 +1,28 @@
-# Saved Views and Favorites - Technical Architecture
+# Technical Architecture: Saved Views & Favorites
 
-This document outlines the technical implementation of the Saved Views and Favorites features.
+The Saved Views and Favorites features rely entirely on client-side state persistence to ensure speed and privacy.
 
-## State Management (`useSpecStore`)
+## Zustand State Management
 
-Both Favorites and Saved Views rely on the global Zustand store (`src/store/spec-store.ts`). We utilize the `persist` middleware to ensure these preferences survive page reloads by serializing the state to `localStorage`.
+Both features are powered by the central `useSpecStore` (`src/store/spec-store.ts`).
 
-### Data Structures
+### State Structure
+- `favorites`: An array of `string` representing the unique `id`s of `ResourceNode`s that the user has starred.
+- `savedViews`: A dictionary/record mapping a specific endpoint path (e.g., `/api/v1/users`) to an array of `SavedView` objects. Each `SavedView` stores:
+  - `id`: A UUID for the view.
+  - `name`: The user-defined display name.
+  - `sorting`: The TanStack Table sorting state array.
+  - `globalFilter`: The current string value of the global search filter.
 
-#### Favorites
-```typescript
-favorites: Record<string, string[]>
-```
-- **Key**: A unique spec identifier combining the spec title and version (e.g., `MyAPI-1.0.0`). This ensures that favorites do not bleed across different OpenAPI files loaded by the user.
-- **Value**: An array of resource `slug` strings.
+### Persistence
+The `useSpecStore` is wrapped in Zustand's `persist` middleware, configured to save data to the browser's `localStorage` under the key `aperio-store`.
 
-#### Saved Views
-```typescript
-savedViews: Record<string, Record<string, SavedView[]>>
-```
-- **Outer Key**: The unique spec identifier (`specKey`).
-- **Inner Key**: The full resource path (e.g., `/users/{id}`).
-- **Value**: An array of `SavedView` objects.
-
-```typescript
-export interface SavedView {
-  id: string;
-  name: string;
-  sorting: SortingState;
-  columnVisibility: Record<string, boolean>;
-  globalFilter: string;
-}
-```
+To ensure we don't save ephemeral UI state (like `isLoading`), the `persist` configuration uses the `partialize` function. The `favorites` and `savedViews` keys have been explicitly added to the `partialize` return object, ensuring they survive browser reloads.
 
 ## Component Integration
 
-### Favorites (Sidebar)
-The `SidebarNav` component (`src/components/sidebar-nav.tsx`) queries the store for the current spec's favorites. It iterates through the loaded `ResourceNode` tree to find matches by slug and renders them at the top of the sidebar under a dedicated "Favorites" heading.
+### SidebarNav
+The `SidebarNav` component (`src/components/sidebar-nav.tsx`) maps over the `favorites` array. It recursively searches the active `ResourceTree` to map the saved IDs back to full `ResourceNode` objects in order to render the pinned links correctly.
 
-### Resource Table
-The `ResourceTable` component (`src/components/resource-table.tsx`) integrates deeply with `@tanstack/react-table`:
-1. It maintains local React state for `sorting`, `globalFilter`, and `columnVisibility`.
-2. A `DropdownMenuCheckboxItem` maps over the table's leaf columns to toggle visibility.
-3. When a view is saved, the current state of `sorting`, `globalFilter`, and `columnVisibility` is serialized into a `SavedView` object and dispatched to the store.
-4. Loading a view simply unpacks those properties back into the component's local state hooks, forcing a re-render of the React Table.
-
-## Storage Constraints
-Since `localStorage` is synchronously parsed and strictly size-limited (typically ~5MB), storing full table data is avoided. The `SavedView` object strictly contains lightweight configuration metadata (`SortingState` arrays and boolean visibility flags), ensuring a minimal footprint.
+### ResourceTable
+The `ResourceTable` component (`src/components/resource-table.tsx`) exposes UI controls that read from and dispatch actions to the `savedViews` dictionary. When a view is loaded, it immediately overwrites the local `useState` variables (`sorting`, `globalFilter`) which are fed directly into the `useReactTable` hook.

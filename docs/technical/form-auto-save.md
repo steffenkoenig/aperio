@@ -12,7 +12,7 @@ Draft data is serialized and stored entirely locally in the browser using the `l
 Example:
 `draft_Stripe API_POST_/v1/customers`
 
-## Implementation Details (`src/components/resource-form.tsx`)
+## Implementation Details (`src/components/resource-form/index.tsx`)
 
 - **Debouncing:** The component uses a `useEffect` hook coupled with a `setTimeout` to debounce `localStorage` writes. It waits 500ms after the last `formData` update before committing to storage, ensuring smooth UI performance even when typing rapidly.
 - **Hydration:** Upon mounting, the component synchronously checks `localStorage` for the corresponding key. If found, it hydrates the `formData` state and displays a `sonner` toast notification to inform the user that a draft was restored.
