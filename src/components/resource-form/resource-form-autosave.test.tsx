@@ -1,9 +1,9 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
-import { ResourceForm } from './resource-form';
-import { useSpecStore } from '../../src/store/spec-store';
+import { ResourceForm } from '@/components/resource-form';
+import { useSpecStore } from '@/store/spec-store';
 
-jest.mock('../../src/store/spec-store', () => ({
+jest.mock('@/store/spec-store', () => ({
   useSpecStore: jest.fn(),
 }));
 
@@ -64,7 +64,7 @@ describe('ResourceForm Auto-Save', () => {
     jest.useFakeTimers();
     render(<ResourceForm path="/pets" method="POST" operation={mockOperation} />);
 
-    // Fast forward mount effect timer
+    // allow initial hydration setTimeout(..., 0) to resolve
     act(() => {
       jest.advanceTimersByTime(10);
     });
