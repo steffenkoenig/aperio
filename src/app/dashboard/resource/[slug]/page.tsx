@@ -3,7 +3,7 @@
 import { use } from 'react';
 import { useSpecStore } from '@/store/spec-store';
 import { ResourceTable } from '@/components/resource-table';
-import { ResourceForm } from '@/components/resource-form';
+import { ResourceForm } from '@/components/resource-form/index';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
