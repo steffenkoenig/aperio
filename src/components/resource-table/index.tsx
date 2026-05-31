@@ -1,20 +1,26 @@
 'use client';
 
+import { useState } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
   getSortedRowModel,
   getFilteredRowModel,
   flexRender,
+  VisibilityState,
+  SortingState,
 } from '@tanstack/react-table';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Loader2, RefreshCw, Search, Download } from 'lucide-react';
+import { Loader2, RefreshCw, Search, Download, Save, Trash2 } from 'lucide-react';
 import { extractPathParamNames } from '@/lib/utils';
 import { exportTableToCSV, exportTableToJSON } from '@/lib/export-utils';
+import { useSpecStore } from '@/store/spec-store';
+import { toast } from 'sonner';
 import { useResourceTable } from './hooks/useResourceTable';
 import { inferColumns } from './components/complex-cell-viewer';
 
@@ -26,7 +32,6 @@ export interface ResourceTableProps {
 export function ResourceTable({ path, pathParams = {} }: ResourceTableProps) {
   const resolvedPath = path.replace(/\{([^}]+)\}/g, (_, key: string) => pathParams[key] ?? `:${key}`);
 
-  // Detect any path params that haven't been filled in yet
   const pathParamNames = extractPathParamNames(path);
   const missingParams = pathParamNames.filter((name) => !pathParams[name]);
 
@@ -41,14 +46,25 @@ export function ResourceTable({ path, pathParams = {} }: ResourceTableProps) {
     fetchData,
   } = useResourceTable({ resolvedPath, missingParams });
 
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [activeViewId, setActiveViewId] = useState<string>('default');
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [newViewName, setNewViewName] = useState('');
+
+  const { specSource, preferences, saveView, deleteView } = useSpecStore();
+  const savedViewsForPath = specSource
+    ? (preferences[specSource]?.savedViews || []).filter(v => v.resourcePath === path)
+    : [];
+
   const columns = inferColumns(data);
 
   const table = useReactTable({
     data,
     columns,
-    state: { sorting, globalFilter },
+    state: { sorting, globalFilter, columnVisibility },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
+    onColumnVisibilityChange: setColumnVisibility,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -113,6 +129,86 @@ export function ResourceTable({ path, pathParams = {} }: ResourceTableProps) {
         <Badge variant="outline" className="text-xs">
           {isLoading ? '...' : `${table.getFilteredRowModel().rows.length} rows`}
         </Badge>
+      </div>
+
+      <div className="flex items-center gap-2">
+        {savedViewsForPath.length > 0 && (
+          <select
+            className="h-8 text-xs border rounded bg-background px-2 py-1 max-w-[150px] outline-none"
+            value={activeViewId}
+            onChange={(e) => {
+              const id = e.target.value;
+              setActiveViewId(id);
+              if (id === 'default') {
+                setSorting([]);
+                setGlobalFilter('');
+                setColumnVisibility({});
+              } else {
+                const view = savedViewsForPath.find(v => v.id === id);
+                if (view) {
+                  setSorting(view.sorting as SortingState);
+                  setGlobalFilter(view.globalFilter);
+                  setColumnVisibility(view.columnVisibility);
+                }
+              }
+            }}
+          >
+            <option value="default">Default View</option>
+            {savedViewsForPath.map(v => (
+              <option key={v.id} value={v.id}>{v.name}</option>
+            ))}
+          </select>
+        )}
+
+        <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+          <DialogTrigger asChild>
+            <Button size="sm" variant="outline" className="h-8 text-xs gap-1">
+              <Save className="h-3 w-3" /> Save View
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Save Current View</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <label htmlFor="view-name" className="text-right text-sm font-medium">Name</label>
+                <Input
+                  id="view-name"
+                  value={newViewName}
+                  onChange={(e) => setNewViewName(e.target.value)}
+                  placeholder="e.g. Active Users"
+                  className="col-span-3 h-8"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => setSaveDialogOpen(false)}>Cancel</Button>
+              <Button
+                size="sm"
+                disabled={!newViewName.trim()}
+                onClick={() => {
+                  const id = crypto.randomUUID();
+                  saveView({ id, name: newViewName.trim(), resourcePath: path, globalFilter, sorting: sorting as { id: string; desc: boolean }[], columnVisibility });
+                  setActiveViewId(id);
+                  setSaveDialogOpen(false);
+                  setNewViewName('');
+                  toast.success('View saved');
+                }}
+              >Save</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {activeViewId !== 'default' && (
+          <Button
+            size="sm" variant="ghost"
+            className="h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+            onClick={() => { deleteView(activeViewId); setActiveViewId('default'); setSorting([]); setGlobalFilter(''); setColumnVisibility({}); toast.success('View deleted'); }}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        )}
       </div>
 
       <div className="rounded-md border overflow-hidden">
