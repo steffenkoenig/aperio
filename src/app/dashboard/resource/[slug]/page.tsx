@@ -154,6 +154,7 @@ export default function ResourcePage({ params }: PageProps) {
           <TabsContent value="list">
             <ResourceTable
               path={node.path}
+              slug={node.slug}
               pathParams={pathParams}
             />
           </TabsContent>
@@ -163,6 +164,7 @@ export default function ResourcePage({ params }: PageProps) {
           <TabsContent key={m} value={m}>
             <ResourceForm
               path={node.path}
+              slug={node.slug}
               method={m}
               operation={node.operations[m] as OperationObject}
               pathParams={pathParams}
