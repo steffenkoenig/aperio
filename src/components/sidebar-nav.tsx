@@ -3,8 +3,9 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useSpecStore } from '@/store/spec-store';
 import { ResourceNode } from '@/lib/types';
-import { ChevronRight, Database, Zap, Box, FolderOpen, Folder } from 'lucide-react';
+import { ChevronRight, Database, Zap, Box, FolderOpen, Folder, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -110,7 +111,24 @@ function NavItem({ node, depth }: NavItemProps) {
   );
 }
 
+function findNodeBySlug(nodes: ResourceNode[], slug: string): ResourceNode | null {
+  if (!nodes) return null;
+  for (const node of nodes) {
+    if (node.slug === slug) return node;
+    if (node.children) {
+      const found = findNodeBySlug(node.children, slug);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
 export function SidebarNav({ nodes, specTitle }: SidebarNavProps) {
+  const { parsedSpec, getFavorites } = useSpecStore();
+  const specKey = parsedSpec ? `${parsedSpec.title}-${parsedSpec.version}` : '';
+  const favoriteSlugs = getFavorites(specKey);
+  const favoriteNodes = favoriteSlugs.map(slug => findNodeBySlug(nodes, slug)).filter(Boolean) as ResourceNode[];
+
   return (
     <aside className="flex flex-col w-64 border-r bg-background h-full">
       <div className="p-4 border-b">
@@ -133,6 +151,25 @@ export function SidebarNav({ nodes, specTitle }: SidebarNavProps) {
             Overview
           </Link>
           <div className="h-px bg-border my-2" />
+
+          {favoriteNodes.length > 0 && (
+            <div className="mb-4">
+              <div className="px-2 py-1 flex items-center gap-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
+                Favorites
+              </div>
+              <div className="space-y-0.5 mt-1">
+                {favoriteNodes.map((node) => (
+                  <NavItem key={`fav-${node.id}`} node={node} depth={0} />
+                ))}
+              </div>
+              <div className="h-px bg-border my-2" />
+            </div>
+          )}
+
+          <div className="px-2 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            Resources
+          </div>
           {nodes.map((node) => (
             <NavItem key={node.id} node={node} depth={0} />
           ))}

@@ -141,3 +141,11 @@ export interface AperioConfig {
   environments: AppEnvironment[];
   activeEnvironmentId?: string;
 }
+
+export interface SavedView {
+  id: string;
+  name: string;
+  sorting: import("@tanstack/react-table").SortingState;
+  columnVisibility: Record<string, boolean>;
+  globalFilter: string;
+}

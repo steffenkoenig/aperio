@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ResourceNode, OperationObject } from '@/lib/types';
 import { extractPathParamNames } from '@/lib/utils';
-import { Database, Zap, Box, KeyRound } from 'lucide-react';
+import { Database, Zap, Box, KeyRound, Star } from 'lucide-react';
 
 function findNodeBySlug(nodes: ResourceNode[], slug: string): ResourceNode | null {
   if (!nodes) return null;
@@ -38,9 +38,12 @@ interface PageProps {
 export default function ResourcePage({ params }: PageProps) {
   const { slug } = use(params);
   const decodedSlug = decodeURIComponent(slug);
-  const { parsedSpec, pathParams, setPathParam } = useSpecStore();
+  const { parsedSpec, pathParams, setPathParam, isFavorite, toggleFavorite } = useSpecStore();
 
   if (!parsedSpec) return null;
+
+  const specKey = `${parsedSpec.title}-${parsedSpec.version}`;
+  const isFav = isFavorite(specKey, decodedSlug);
 
   const node = findNodeBySlug(parsedSpec.resourceTree, decodedSlug);
 
@@ -73,6 +76,15 @@ export default function ResourcePage({ params }: PageProps) {
         <div className="flex items-center gap-2 mb-1">
           <TypeIcon className="h-5 w-5 text-muted-foreground" />
           <h1 className="text-xl font-bold">{node.name}</h1>
+          <button
+            onClick={() => toggleFavorite(specKey, decodedSlug)}
+            className="p-1 rounded hover:bg-accent/50 text-muted-foreground hover:text-yellow-500 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+            title={isFav ? 'Remove from favorites' : 'Add to favorites'}
+            aria-label={isFav ? 'Remove from favorites' : 'Add to favorites'}
+            aria-pressed={isFav}
+          >
+            <Star className={`h-5 w-5 ${isFav ? 'fill-yellow-500 text-yellow-500' : ''}`} />
+          </button>
           <Badge variant="outline" className="text-xs font-mono">{node.type}</Badge>
         </div>
         <div className="flex items-center gap-2">

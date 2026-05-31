@@ -14,10 +14,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { ArrowUpDown, Loader2, RefreshCw, Search, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowUpDown, Loader2, RefreshCw, Search, ChevronDown, ChevronUp, Columns, Bookmark, Save, Trash2 } from 'lucide-react';
 import { useSpecStore } from '@/store/spec-store';
 import { extractPathParamNames } from '@/lib/utils';
 import { toast } from 'sonner';
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 interface ResourceTableProps {
   path: string;
@@ -169,8 +171,14 @@ export function ResourceTable({ path, pathParams = {} }: ResourceTableProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState('');
+  const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({});
   const [error, setError] = useState<string | null>(null);
-  const { getActiveEnvironment } = useSpecStore();
+  const [viewName, setViewName] = useState('');
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const { getActiveEnvironment, parsedSpec, savedViews: allSavedViews, addSavedView, removeSavedView } = useSpecStore();
+
+  const specKey = parsedSpec ? `${parsedSpec.title}-${parsedSpec.version}` : '';
+  const savedViews = (allSavedViews[specKey] || {})[path] || [];
 
   const resolvedPath = path.replace(/\{([^}]+)\}/g, (_, key: string) => pathParams[key] ?? `:${key}`);
 
@@ -241,13 +249,42 @@ export function ResourceTable({ path, pathParams = {} }: ResourceTableProps) {
   const table = useReactTable({
     data,
     columns,
-    state: { sorting, globalFilter },
+    state: { sorting, globalFilter, columnVisibility },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
+    onColumnVisibilityChange: setColumnVisibility,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
   });
+
+  const handleSaveView = () => {
+    if (!viewName.trim()) return;
+    const newView = {
+      id: crypto.randomUUID(),
+      name: viewName,
+      sorting,
+      columnVisibility,
+      globalFilter,
+    };
+    addSavedView(specKey, path, newView);
+    setSaveDialogOpen(false);
+    setViewName('');
+    toast.success(`View "${viewName}" saved successfully.`);
+  };
+
+  const applyView = (view: typeof savedViews[0]) => {
+    setSorting(view.sorting);
+    setColumnVisibility(view.columnVisibility);
+    setGlobalFilter(view.globalFilter);
+    toast.success(`Applied view: ${view.name}`);
+  };
+
+  const handleRemoveView = (e: React.MouseEvent, id: string, name: string) => {
+    e.stopPropagation();
+    removeSavedView(specKey, path, id);
+    toast.success(`View "${name}" deleted.`);
+  };
 
   if (missingParams.length > 0) {
     return (
@@ -287,6 +324,102 @@ export function ResourceTable({ path, pathParams = {} }: ResourceTableProps) {
           {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
           Refresh
         </Button>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8">
+              <Columns className="mr-2 h-3.5 w-3.5" />
+              Columns
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-[200px]">
+            <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {table
+              .getAllColumns()
+              .filter((column) => column.getCanHide())
+              .map((column) => {
+                return (
+                  <DropdownMenuCheckboxItem
+                    key={column.id}
+                    className="capitalize"
+                    checked={column.getIsVisible()}
+                    onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                  >
+                    {column.id}
+                  </DropdownMenuCheckboxItem>
+                );
+              })}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8">
+              <Bookmark className="mr-2 h-3.5 w-3.5" />
+              Views
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-[250px]">
+            <DropdownMenuLabel>Saved Views</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {savedViews.length === 0 ? (
+              <div className="p-2 text-xs text-muted-foreground text-center">No saved views</div>
+            ) : (
+              savedViews.map((view) => (
+                <DropdownMenuItem key={view.id} onClick={() => applyView(view)} className="flex items-center justify-between cursor-pointer">
+                  <span>{view.name}</span>
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    className="p-1 rounded-sm opacity-70 hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
+                    onClick={(e) => handleRemoveView(e, view.id, view.name)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </div>
+                </DropdownMenuItem>
+              ))
+            )}
+            <DropdownMenuSeparator />
+            <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+              <DialogTrigger asChild>
+                <div
+                  role="menuitem"
+                  className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setSaveDialogOpen(true);
+                  }}
+                >
+                  <Save className="mr-2 h-3.5 w-3.5" />
+                  Save current view...
+                </div>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Save View</DialogTitle>
+                  <DialogDescription>
+                    Save your current column visibility, sorting, and filters to easily access them later.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                  <Input
+                    placeholder="Enter view name..."
+                    value={viewName}
+                    onChange={(e) => setViewName(e.target.value)}
+                    autoFocus
+                    onKeyDown={(e) => e.key === 'Enter' && handleSaveView()}
+                  />
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setSaveDialogOpen(false)}>Cancel</Button>
+                  <Button onClick={handleSaveView} disabled={!viewName.trim()}>Save View</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         <Badge variant="outline" className="text-xs">
           {isLoading ? '...' : `${table.getFilteredRowModel().rows.length} rows`}
         </Badge>
