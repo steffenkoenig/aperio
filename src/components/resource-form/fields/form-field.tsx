@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react';
-import { ChevronDown, ChevronRight, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { SchemaObject, OpenApiSpec } from '@/lib/types';
+import { ChevronDown, ChevronRight, Plus, Trash2 } from 'lucide-react';
+import { SchemaObject, OpenApiSpec, OperationObject } from '@/lib/types';
 import { resolveSchema } from '@/lib/schema-resolver';
 
 export interface FormFieldProps {
@@ -12,6 +12,16 @@ export interface FormFieldProps {
   onChange: (val: unknown) => void;
   required: boolean;
   components: OpenApiSpec['components'];
+}
+
+export function getSchema(operation: OperationObject): SchemaObject | null {
+  const content = operation.requestBody?.content;
+  if (!content) return null;
+  return (
+    content['application/json']?.schema ??
+    content['application/x-www-form-urlencoded']?.schema ??
+    null
+  );
 }
 
 export function FormField({ name, schema, value, onChange, required, components }: FormFieldProps) {

@@ -7,11 +7,10 @@ import { Loader2, Send, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { OperationObject, SchemaObject } from '@/lib/types';
 import { useSpecStore } from '@/store/spec-store';
 import { resolveSchema } from '@/lib/schema-resolver';
-import { toast } from 'sonner';
+
 import { cn, extractPathParamNames } from '@/lib/utils';
-import { useFormDraft } from './hooks/use-form-draft';
-import { useFormSubmit } from './hooks/use-form-submit';
-import { FormField } from './fields/form-field';
+import { FormField, getSchema } from './fields/form-field';
+import { useResourceForm } from './hooks/useResourceForm';
 
 export interface ResourceFormProps {
   path: string;
@@ -21,32 +20,22 @@ export interface ResourceFormProps {
   onSuccess?: (data: unknown) => void;
 }
 
-function getSchema(operation: OperationObject): SchemaObject | null {
-  const content = operation.requestBody?.content;
-  if (!content) return null;
-  return (
-    content['application/json']?.schema ??
-    content['application/x-www-form-urlencoded']?.schema ??
-    null
-  );
-}
-
 export function ResourceForm({ path, method, operation, pathParams = {}, onSuccess }: ResourceFormProps) {
-  const { getActiveEnvironment, parsedSpec } = useSpecStore();
-
-  const draftKey = `draft_${parsedSpec?.title ?? 'default'}_${method.toUpperCase()}_${path}`;
-
-  const { formData, setFormData, handleDiscardDraft, clearDraft } = useFormDraft({ draftKey });
-
   const resolvedPath = path.replace(/\{([^}]+)\}/g, (_, key: string) => pathParams[key] ?? `:${key}`);
 
-  const { response, isLoading, showResponse, setShowResponse, handleSubmit } = useFormSubmit({
-    method,
-    resolvedPath,
-    getActiveEnvironment,
-    onSuccess,
-    clearDraft,
-  });
+  const {
+    formData,
+    setFormData,
+    response,
+    isLoading,
+    showResponse,
+    setShowResponse,
+    handleDiscardDraft,
+    handleSubmit,
+    copyAsFetch
+  } = useResourceForm({ path, method, resolvedPath, onSuccess });
+
+  const { parsedSpec } = useSpecStore();
 
   const rawSchema = getSchema(operation);
   const components = parsedSpec?.raw.components;
@@ -77,7 +66,7 @@ export function ResourceForm({ path, method, operation, pathParams = {}, onSucce
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={(e) => void handleSubmit(e, formData)} className="space-y-3">
+        <form onSubmit={(e) => void handleSubmit(e)} className="space-y-3">
           {Object.entries(properties).map(([name, fieldSchema]) => (
             <FormField
               key={name}
@@ -128,51 +117,7 @@ export function ResourceForm({ path, method, operation, pathParams = {}, onSucce
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => {
-                const env = getActiveEnvironment();
-                if (!env?.baseUrl) {
-                  toast.error('No base URL configured.');
-                  return;
-                }
-
-                const headers: Record<string, string> = {};
-                const hasBody = Object.keys(formData).length > 0;
-                if (hasBody) {
-                  headers['Content-Type'] = 'application/json';
-                }
-
-                if (env.authType === 'bearer' && env.authValue) {
-                  headers['Authorization'] = `Bearer ${env.authValue}`;
-                } else if (env.authType === 'apiKey' && env.authValue) {
-                  headers[env.authHeader ?? 'X-API-Key'] = env.authValue;
-                } else if (env.authType === 'basic' && env.authValue) {
-                  headers['Authorization'] = `Basic ${btoa(env.authValue)}`;
-                }
-
-                const options: RequestInit = {
-                  method: method.toUpperCase(),
-                  headers,
-                };
-
-                let bodyStr = '';
-                if (hasBody) {
-                  bodyStr = JSON.stringify(formData, null, 2);
-                  options.body = bodyStr;
-                }
-
-                const fetchCode = `fetch('${env.baseUrl}${resolvedPath}', {\n  method: '${options.method}',\n  headers: ${JSON.stringify(options.headers, null, 2).replace(/\n/g, '\n  ')}${bodyStr ? `,\n  body: JSON.stringify(${bodyStr.replace(/\n/g, '\n  ')})` : ''}\n});`;
-
-                if (!navigator.clipboard) {
-                  toast.error('Clipboard API not available in this browser/context');
-                  return;
-                }
-
-                navigator.clipboard.writeText(fetchCode).then(() => {
-                  toast.success('Fetch code copied to clipboard');
-                }).catch(() => {
-                  toast.error('Failed to copy code to clipboard');
-                });
-              }}
+              onClick={() => copyAsFetch()}
               disabled={missingParams.length > 0}
             >
               Copy as Fetch

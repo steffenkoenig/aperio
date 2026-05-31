@@ -1,39 +1,37 @@
 import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
+import { OpenApiSpec } from '@/lib/types';
 
-interface UseFormDraftProps {
-  draftKey: string;
-}
-
-export function useFormDraft({ draftKey }: UseFormDraftProps) {
+export function useFormDraft(parsedSpec: OpenApiSpec | null, method: string, path: string) {
   const [formData, setFormData] = useState<Record<string, unknown>>({});
-  const [isDraftLoaded, setIsDraftLoaded] = useState(false);
   const isInitialized = useRef(false);
+
+  const draftKey = `draft_${parsedSpec?.info?.title ?? 'default'}_${method.toUpperCase()}_${path}`;
 
   useEffect(() => {
     if (isInitialized.current) return;
-    isInitialized.current = true;
 
-    // Defer the hydration to avoid cascading renders inside the effect body
-    setTimeout(() => {
-      try {
-        const draft = localStorage.getItem(draftKey);
-        if (draft) {
-          setFormData(JSON.parse(draft));
+    // Load draft on mount
+    try {
+      const draft = localStorage.getItem(draftKey);
+      if (draft) {
+        // We use a timeout to avoid synchronous setState inside effect
+        setTimeout(() => {
+          setFormData(JSON.parse(draft) as Record<string, unknown>);
           toast('Draft restored', {
             description: 'Your previous form data has been loaded.',
             duration: 3000,
           });
-        }
-      } catch {
-        // Ignore local storage errors
+        }, 0);
       }
-      setIsDraftLoaded(true);
-    }, 0);
+    } catch {
+      // Ignore local storage errors
+    }
+    isInitialized.current = true;
   }, [draftKey]);
 
   useEffect(() => {
-    if (!isDraftLoaded) return;
+    if (!isInitialized.current) return;
 
     const handler = setTimeout(() => {
       try {
@@ -43,12 +41,12 @@ export function useFormDraft({ draftKey }: UseFormDraftProps) {
           localStorage.removeItem(draftKey);
         }
       } catch {
-        // Ignore local storage errors
+        // Ignore local storage errors (quota exceeded, etc)
       }
     }, 500);
 
     return () => clearTimeout(handler);
-  }, [formData, isDraftLoaded, draftKey]);
+  }, [formData, draftKey]);
 
   const handleDiscardDraft = () => {
     setFormData({});

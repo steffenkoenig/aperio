@@ -8,6 +8,7 @@ import { EnvironmentSwitcher } from '@/components/environment-switcher';
 import { Button } from '@/components/ui/button';
 import { LogOut, ExternalLink, Search } from 'lucide-react';
 import { CommandPalette } from '@/components/command-palette';
+import { BookmarksPanel } from '@/components/bookmarks-panel';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -66,6 +67,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <span className="text-xs">⌘</span>K
               </kbd>
             </Button>
+            <BookmarksPanel />
             <EnvironmentSwitcher />
             <Button
               variant="ghost"
