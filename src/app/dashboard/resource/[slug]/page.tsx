@@ -38,7 +38,7 @@ interface PageProps {
 export default function ResourcePage({ params }: PageProps) {
   const { slug } = use(params);
   const decodedSlug = decodeURIComponent(slug);
-  const { parsedSpec, pathParams, setPathParam, favorites, specSource, toggleFavorite } = useSpecStore();
+  const { parsedSpec, pathParams, setPathParam, preferences, specSource, toggleFavorite } = useSpecStore();
 
   if (!parsedSpec) return null;
 
@@ -65,7 +65,7 @@ export default function ResourcePage({ params }: PageProps) {
   const mutationMethods = Object.keys(node.operations).filter((m) => m !== 'get');
 
   const defaultTab = hasList ? 'list' : mutationMethods[0] ?? 'info';
-  const isFavorite = specSource && favorites[specSource]?.includes(node.slug);
+  const isFavorite = specSource && preferences[specSource]?.favorites?.includes(node.path);
 
   return (
     <div className="p-6 max-w-5xl">
@@ -75,7 +75,7 @@ export default function ResourcePage({ params }: PageProps) {
           <TypeIcon className="h-5 w-5 text-muted-foreground" />
           <h1 className="text-xl font-bold">{node.name}</h1>
           <button
-            onClick={() => toggleFavorite(node.slug)}
+            onClick={() => toggleFavorite(node.path)}
             className={`p-1 rounded hover:bg-accent transition-colors ${isFavorite ? 'text-yellow-500' : 'text-muted-foreground'}`}
             title={isFavorite ? "Remove from Favorites" : "Add to Favorites"}
           >
@@ -154,7 +154,6 @@ export default function ResourcePage({ params }: PageProps) {
           <TabsContent value="list">
             <ResourceTable
               path={node.path}
-              slug={node.slug}
               pathParams={pathParams}
             />
           </TabsContent>
@@ -164,7 +163,6 @@ export default function ResourcePage({ params }: PageProps) {
           <TabsContent key={m} value={m}>
             <ResourceForm
               path={node.path}
-              slug={node.slug}
               method={m}
               operation={node.operations[m] as OperationObject}
               pathParams={pathParams}
