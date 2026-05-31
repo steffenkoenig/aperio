@@ -36,6 +36,45 @@ describe('useSpecStore - Favorites and Saved Views', () => {
     expect(useSpecStore.getState().preferences['https://example.com/spec.json'].favorites).not.toContain('/users');
   });
 
+  it('should not throw when toggling favorite without a specSource', () => {
+    // specSource is null in the initial state
+    expect(() => useSpecStore.getState().toggleFavorite('/users')).not.toThrow();
+    expect(useSpecStore.getState().preferences).toEqual({});
+  });
+
+  it('should not throw when saving view without a specSource', () => {
+    const view: SavedView = {
+      id: 'v1',
+      name: 'Test',
+      resourcePath: '/users',
+      columnVisibility: {},
+      globalFilter: '',
+      sorting: []
+    };
+    expect(() => useSpecStore.getState().saveView(view)).not.toThrow();
+    expect(useSpecStore.getState().preferences).toEqual({});
+  });
+
+  it('should update an existing view when saving with same id', () => {
+    useSpecStore.getState().setParsedSpec(dummySpec, 'https://example.com/spec.json');
+
+    const view: SavedView = {
+      id: 'v1',
+      name: 'Original',
+      resourcePath: '/users',
+      columnVisibility: {},
+      globalFilter: '',
+      sorting: []
+    };
+
+    useSpecStore.getState().saveView(view);
+    useSpecStore.getState().saveView({ ...view, name: 'Updated' });
+
+    const views = useSpecStore.getState().preferences['https://example.com/spec.json'].savedViews;
+    expect(views).toHaveLength(1);
+    expect(views[0].name).toBe('Updated');
+  });
+
   it('should save and delete custom views correctly', () => {
     useSpecStore.getState().setParsedSpec(dummySpec, 'https://example.com/spec.json');
 

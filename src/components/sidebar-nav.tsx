@@ -45,7 +45,7 @@ interface NavItemProps {
 
 function NavItem({ node, depth }: NavItemProps) {
   const { specSource, preferences, toggleFavorite } = useSpecStore();
-  const isFavorited = specSource && preferences[specSource]?.favorites?.includes(node.path);
+  const isFavorited = !!(specSource && preferences[specSource]?.favorites?.includes(node.path));
 
   const pathname = usePathname();
   const [expanded, setExpanded] = useState(true);
