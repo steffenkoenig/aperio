@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { ResourceForm } from './resource-form';
 import { useSpecStore } from '../../src/store/spec-store';
 
@@ -64,6 +64,11 @@ describe('ResourceForm Auto-Save', () => {
     jest.useFakeTimers();
     render(<ResourceForm path="/pets" method="POST" operation={mockOperation} />);
 
+    // Fast forward mount effect timer
+    act(() => {
+      jest.advanceTimersByTime(10);
+    });
+
     const button = screen.getByText('name'); // Click to expand object
     fireEvent.click(button);
 
@@ -71,7 +76,9 @@ describe('ResourceForm Auto-Save', () => {
     const inputs = screen.getAllByRole('textbox');
     fireEvent.change(inputs[0], { target: { value: 'Buddy' } });
 
-    jest.advanceTimersByTime(600);
+    act(() => {
+      jest.advanceTimersByTime(600);
+    });
 
     const draftKey = 'draft_TestSpec_POST_/pets';
     const saved = localStorage.getItem(draftKey);
