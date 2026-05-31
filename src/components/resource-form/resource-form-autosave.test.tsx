@@ -64,9 +64,9 @@ describe('ResourceForm Auto-Save', () => {
     jest.useFakeTimers();
     render(<ResourceForm path="/pets" method="POST" operation={mockOperation} />);
 
-    // Advance timers so the initial draft load effect finishes
+    // allow initial hydration setTimeout(..., 0) to resolve
     act(() => {
-      jest.advanceTimersByTime(0);
+      jest.advanceTimersByTime(10);
     });
 
     const button = screen.getByText('name'); // Click to expand object
@@ -76,8 +76,9 @@ describe('ResourceForm Auto-Save', () => {
     const inputs = screen.getAllByRole('textbox');
     fireEvent.change(inputs[0], { target: { value: 'Buddy' } });
 
-    // Wait for the 500ms debounce
-    jest.advanceTimersByTime(600);
+    act(() => {
+      jest.advanceTimersByTime(600);
+    });
 
     const draftKey = 'draft_TestSpec_POST_/pets';
     const saved = localStorage.getItem(draftKey);
