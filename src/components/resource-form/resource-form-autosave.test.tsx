@@ -1,9 +1,9 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { ResourceForm } from '@/components/resource-form';
 import { useSpecStore } from '@/store/spec-store';
 
-jest.mock('../../../src/store/spec-store', () => ({
+jest.mock('@/store/spec-store', () => ({
   useSpecStore: jest.fn(),
 }));
 
@@ -64,6 +64,11 @@ describe('ResourceForm Auto-Save', () => {
     jest.useFakeTimers();
     render(<ResourceForm path="/pets" method="POST" operation={mockOperation} />);
 
+    // Advance timers so the initial draft load effect finishes
+    act(() => {
+      jest.advanceTimersByTime(0);
+    });
+
     const button = screen.getByText('name'); // Click to expand object
     fireEvent.click(button);
 
@@ -71,6 +76,7 @@ describe('ResourceForm Auto-Save', () => {
     const inputs = screen.getAllByRole('textbox');
     fireEvent.change(inputs[0], { target: { value: 'Buddy' } });
 
+    // Wait for the 500ms debounce
     jest.advanceTimersByTime(600);
 
     const draftKey = 'draft_TestSpec_POST_/pets';
