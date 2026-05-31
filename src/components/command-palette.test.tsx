@@ -16,7 +16,7 @@ jest.mock('./ui/command', () => {
   const original = jest.requireActual('./ui/command');
   return {
     ...original,
-    CommandDialog: ({ children, open }: any) => {
+    CommandDialog: ({ children, open }: unknown) => {
       if (!open) return null;
       return (
         <div data-testid="command-dialog">
