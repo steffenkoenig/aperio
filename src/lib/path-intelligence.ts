@@ -64,18 +64,20 @@ function getPathParent(segments: string[]): string | undefined {
   return undefined;
 }
 
-export function buildResourceTree(paths: Record<string, PathItemObject>, collectedTags?: Set<string>): ResourceNode[] {
+function createResourceNodes(
+  paths: Record<string, PathItemObject>,
+  collectedTags?: Set<string>
+): { nodes: Map<string, ResourceNode>; pathSegmentsMap: Map<string, string[]> } {
   const nodes = new Map<string, ResourceNode>();
   const pathSegmentsMap = new Map<string, string[]>();
-  
-  // First pass: create all nodes
+
   for (const [path, pathItem] of Object.entries(paths)) {
     const segments = path.split('/').filter(Boolean);
     pathSegmentsMap.set(path, segments);
     const methods = ['get', 'post', 'put', 'patch', 'delete'].filter(
       (m) => m in pathItem
     );
-    
+
     const operations: Record<string, OperationObject> = {};
     for (const method of methods) {
       const op = pathItem[method as keyof PathItemObject] as OperationObject | undefined;
@@ -86,14 +88,14 @@ export function buildResourceTree(paths: Record<string, PathItemObject>, collect
         }
       }
     }
-    
+
     if (operations['get']?.['x-pathform-hidden'] && methods.length === 1) continue;
-    
+
     const type = classifyPath(segments, methods);
     const name = getResourceName(path, segments);
     const id = path.replace(/[{}\/]/g, '_').replace(/^_/, '');
     const slug = pathToSlug(path);
-    
+
     const node: ResourceNode = {
       id,
       name,
@@ -105,28 +107,32 @@ export function buildResourceTree(paths: Record<string, PathItemObject>, collect
       children: [],
       parentPath: getPathParent(segments),
     };
-    
+
     nodes.set(path, node);
   }
-  
-  // Second pass: build tree structure
+
+  return { nodes, pathSegmentsMap };
+}
+
+function buildTreeStructure(
+  nodes: Map<string, ResourceNode>,
+  pathSegmentsMap: Map<string, string[]>
+): ResourceNode[] {
   const roots: ResourceNode[] = [];
-  
+
   for (const node of nodes.values()) {
     if (!node.parentPath) {
       roots.push(node);
       continue;
     }
-    
-    // Try to find direct parent
+
     const parent = nodes.get(node.parentPath);
     if (parent) {
       parent.children.push(node);
     } else {
-      // Look for a parent resource collection (e.g., /users for /users/{id}/posts)
       const pathSegments = pathSegmentsMap.get(node.path) || [];
       let placed = false;
-      
+
       for (let i = pathSegments.length - 2; i >= 0; i--) {
         const candidate = '/' + pathSegments.slice(0, i + 1).join('/');
         const candidateNode = nodes.get(candidate);
@@ -136,26 +142,31 @@ export function buildResourceTree(paths: Record<string, PathItemObject>, collect
           break;
         }
       }
-      
+
       if (!placed) {
         roots.push(node);
       }
     }
   }
-  
-  // Sort: root-resources first, then sub-resources, then actions
-  const typeOrder: Record<PathType, number> = {
-    'root-resource': 0,
-    'singleton': 1,
-    'sub-resource': 2,
-    'action': 3,
-  };
-  
-  function sortNodes(nodesToSort: ResourceNode[]): ResourceNode[] {
-    return nodesToSort
-      .sort((a, b) => typeOrder[a.type] - typeOrder[b.type] || a.name.localeCompare(b.name))
-      .map((n) => ({ ...n, children: sortNodes(n.children) }));
-  }
-  
-  return sortNodes(roots);
+
+  return roots;
+}
+
+const TYPE_ORDER: Record<PathType, number> = {
+  'root-resource': 0,
+  'singleton': 1,
+  'sub-resource': 2,
+  'action': 3,
+};
+
+function sortResourceNodes(nodesToSort: ResourceNode[]): ResourceNode[] {
+  return nodesToSort
+    .sort((a, b) => TYPE_ORDER[a.type] - TYPE_ORDER[b.type] || a.name.localeCompare(b.name))
+    .map((n) => ({ ...n, children: sortResourceNodes(n.children) }));
+}
+
+export function buildResourceTree(paths: Record<string, PathItemObject>, collectedTags?: Set<string>): ResourceNode[] {
+  const { nodes, pathSegmentsMap } = createResourceNodes(paths, collectedTags);
+  const roots = buildTreeStructure(nodes, pathSegmentsMap);
+  return sortResourceNodes(roots);
 }

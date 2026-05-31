@@ -1,13 +1,19 @@
-## Refactor Target: src/components/resource-form.tsx
-****Identified Structural Flaw:**** `resource-form.tsx` is 545 lines long. It is a monolithic component containing both the `FormField` component (which has recursive logic for nested objects and arrays) and the `ResourceForm` component (which handles data, API calls, environment extraction, drafts, etc).
-****Impact on Maintainability:**** This structural bloat causes high cognitive load when trying to understand form data bindings versus network boundaries. It prevents easy unit testing of field rendering primitives without mocking out `localStorage` and `fetch` calls. It breaks standard structural boundaries of React components.
-****The Clean Architecture Blueprint:**** We will decompose the file by:
-1. Extracting the `FormField` component into `src/components/resource-form/fields/form-field.tsx`.
-2. Extracting type and schema retrieval utilities into `src/components/resource-form/hooks/use-schema.ts` (or simply `src/components/resource-form/utils.ts`).
-3. Renaming `src/components/resource-form.tsx` to `src/components/resource-form/index.tsx` (the main wrapper).
+## Refactor Target: src/lib/ssrf.ts, src/lib/path-intelligence.ts, src/lib/schema-resolver.ts
+
+****Identified Structural Flaw:****
+- `src/lib/ssrf.ts`: `isSafeUrl` is heavily bloated, containing a massive nested helper function (`isPrivateIp`) which internally manages deep conditionals for both IPv4 parsing and IPv6 string manipulation. This mixes hostname DNS resolution logic with low-level packet header validation.
+- `src/lib/path-intelligence.ts`: `buildResourceTree` attempts to do three distinct structural passes in a single monolithic block: parsing OpenAPI paths into nodes, resolving parent/child hierarchies, and executing custom sorting logic via an internal nested closure.
+- `src/lib/schema-resolver.ts`: `resolveSchema` traverses `$ref`, `allOf`, `anyOf`, `oneOf`, `properties`, and `items` in a single large execution flow, combining structural merging with recursive tree traversal, causing function bloat and cognitive friction.
+
+****Impact on Maintainability:****
+These structural flaws create significant cognitive overhead. Developers must trace through massive functions containing mixed responsibilities. Nested closures block individual subroutines from being isolated or explicitly mocked in unit tests. It violates the core architectural limit of 50-line maximums per function and prevents clean, testable subroutines.
+
+****The Clean Architecture Blueprint:****
+- `src/lib/ssrf.ts`: Decompose `isPrivateIp` into explicit top-level functions `isPrivateIPv4` and `isPrivateIPv6`. Retain `isPrivateIp` as a simple routing layer, leaving `isSafeUrl` strictly focused on the core SSRF DNS checks.
+- `src/lib/path-intelligence.ts`: Decompose `buildResourceTree` into three strict, testable pipelines: `createResourceNodes`, `buildTreeStructure`, and `sortResourceNodes`.
+- `src/lib/schema-resolver.ts`: Extract distinct schema handlers (`resolveAllOf`, `resolveAnyOfOneOf`, `resolveProperties`, `resolveItems`) to isolate recursive logic from the primary `resolveSchema` orchestrator.
+
 ****Verification & Refactor Logic:****
-1. Create directory `src/components/resource-form/fields`.
-2. Move `FormField` to `src/components/resource-form/fields/form-field.tsx`.
-3. Create `src/components/resource-form/index.tsx` with `ResourceForm`.
-4. Delete `src/components/resource-form.tsx`.
-5. Update imports across the codebase (`src/app/dashboard/resource/[slug]/page.tsx`, etc) if needed, or re-export `ResourceForm` from `src/components/resource-form.tsx` to not break external paths. A better approach is to keep `src/components/resource-form/index.tsx` and just export from `src/components/resource-form/index.tsx`, deleting `src/components/resource-form.tsx`. Wait, let's keep the standard structure where complex components are inside a directory with `index.tsx`.
+- Extract monolithic logic blocks into explicit, descriptive, single-purpose functions.
+- Run `npx eslint <file> --rule 'max-lines-per-function: ["error", 50]'` on all three targets to ensure strict limit compliance.
+- Run `npm run test` to verify complete functional parity and test suite success.
