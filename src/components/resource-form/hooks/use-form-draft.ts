@@ -6,7 +6,7 @@ export function useFormDraft(parsedSpec: OpenApiSpec | null, method: string, pat
   const [formData, setFormData] = useState<Record<string, unknown>>({});
   const isInitialized = useRef(false);
 
-  const draftKey = `draft_${parsedSpec?.title ?? 'default'}_${method.toUpperCase()}_${path}`;
+  const draftKey = `draft_${parsedSpec?.info?.title ?? 'default'}_${method.toUpperCase()}_${path}`;
 
   useEffect(() => {
     if (isInitialized.current) return;

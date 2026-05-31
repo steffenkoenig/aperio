@@ -1,16 +1,19 @@
-## Refactor Target: src/components/resource-form.tsx
-****Identified Structural Flaw:**** The `ResourceForm` component is a 545-line monolithic file. It tightly couples complex recursive UI rendering logic (for nested objects and arrays) with form state management, local storage draft persistence, and API request handling (fetch/proxy payload construction).
-****Impact on Maintainability:**** The tight coupling and excessive length cause high cognitive friction. Modifying a simple primitive input or adding a new field type requires navigating through hundreds of lines of complex recursive logic. It also blocks modular testing, as you cannot unit test the array field renderer or the draft persistence hook independently without mounting the entire form and its context.
-****The Clean Architecture Blueprint:**** We will decompose the monolith into a clean, modular structure inside `src/components/resource-form/`. The logic will be split into:
-1. `hooks/use-form-draft.ts` - Custom hook for managing local storage drafts.
-2. `hooks/use-resource-submit.ts` - Custom hook for constructing API payloads and handling form submission.
-3. `fields/form-field-object.tsx` - Handles rendering nested object schemas.
-4. `fields/form-field-array.tsx` - Handles rendering array schemas.
-5. `fields/form-field-simple.tsx` - Handles rendering primitive fields.
-6. `form-field.tsx` - A router that delegates to the specific field component based on schema type.
-7. `resource-form.tsx` - The main container component that composes the hooks and field renderer.
+## Refactor Target: src/lib/ssrf.ts, src/lib/path-intelligence.ts, src/lib/schema-resolver.ts
+
+****Identified Structural Flaw:****
+- `src/lib/ssrf.ts`: `isSafeUrl` is heavily bloated, containing a massive nested helper function (`isPrivateIp`) which internally manages deep conditionals for both IPv4 parsing and IPv6 string manipulation. This mixes hostname DNS resolution logic with low-level packet header validation.
+- `src/lib/path-intelligence.ts`: `buildResourceTree` attempts to do three distinct structural passes in a single monolithic block: parsing OpenAPI paths into nodes, resolving parent/child hierarchies, and executing custom sorting logic via an internal nested closure.
+- `src/lib/schema-resolver.ts`: `resolveSchema` traverses `$ref`, `allOf`, `anyOf`, `oneOf`, `properties`, and `items` in a single large execution flow, combining structural merging with recursive tree traversal, causing function bloat and cognitive friction.
+
+****Impact on Maintainability:****
+These structural flaws create significant cognitive overhead. Developers must trace through massive functions containing mixed responsibilities. Nested closures block individual subroutines from being isolated or explicitly mocked in unit tests. It violates the core architectural limit of 50-line maximums per function and prevents clean, testable subroutines.
+
+****The Clean Architecture Blueprint:****
+- `src/lib/ssrf.ts`: Decompose `isPrivateIp` into explicit top-level functions `isPrivateIPv4` and `isPrivateIPv6`. Retain `isPrivateIp` as a simple routing layer, leaving `isSafeUrl` strictly focused on the core SSRF DNS checks.
+- `src/lib/path-intelligence.ts`: Decompose `buildResourceTree` into three strict, testable pipelines: `createResourceNodes`, `buildTreeStructure`, and `sortResourceNodes`.
+- `src/lib/schema-resolver.ts`: Extract distinct schema handlers (`resolveAllOf`, `resolveAnyOfOneOf`, `resolveProperties`, `resolveItems`) to isolate recursive logic from the primary `resolveSchema` orchestrator.
+
 ****Verification & Refactor Logic:****
-1. Extract `use-form-draft.ts` and `use-resource-submit.ts` hooks into a `hooks` subdirectory.
-2. Extract the field rendering components into a `fields` subdirectory, passing necessary props.
-3. Re-assemble `ResourceForm` to use these isolated modules.
-4. Run `npm run test` and `npx eslint` to verify the refactoring preserves all existing functionality and passes formatting.
+- Extract monolithic logic blocks into explicit, descriptive, single-purpose functions.
+- Run `npx eslint <file> --rule 'max-lines-per-function: ["error", 50]'` on all three targets to ensure strict limit compliance.
+- Run `npm run test` to verify complete functional parity and test suite success.

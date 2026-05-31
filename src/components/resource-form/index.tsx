@@ -7,12 +7,12 @@ import { Loader2, Send, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { OperationObject, SchemaObject } from '@/lib/types';
 import { useSpecStore } from '@/store/spec-store';
 import { resolveSchema } from '@/lib/schema-resolver';
-import { cn, extractPathParamNames } from '@/lib/utils';
-import { FormField } from './fields/form-field';
-import { useFormDraft } from './hooks/use-form-draft';
-import { useResourceSubmit } from './hooks/use-resource-submit';
 
-interface ResourceFormProps {
+import { cn, extractPathParamNames } from '@/lib/utils';
+import { FormField, getSchema } from './fields/form-field';
+import { useResourceForm } from './hooks/useResourceForm';
+
+export interface ResourceFormProps {
   path: string;
   method: string;
   operation: OperationObject;
@@ -20,52 +20,34 @@ interface ResourceFormProps {
   onSuccess?: (data: unknown) => void;
 }
 
-function getSchema(operation: OperationObject): SchemaObject | null {
-  const content = operation.requestBody?.content;
-  if (!content) return null;
-  return (
-    content['application/json']?.schema ??
-    content['application/x-www-form-urlencoded']?.schema ??
-    null
-  );
-}
-
 export function ResourceForm({ path, method, operation, pathParams = {}, onSuccess }: ResourceFormProps) {
-  const { getActiveEnvironment, parsedSpec } = useSpecStore();
+  const resolvedPath = path.replace(/\{([^}]+)\}/g, (_, key: string) => pathParams[key] ?? `:${key}`);
 
-  const { formData, setFormData, handleDiscardDraft, clearDraft } = useFormDraft(
-    parsedSpec,
-    method,
-    path
-  );
+  const {
+    formData,
+    setFormData,
+    response,
+    isLoading,
+    showResponse,
+    setShowResponse,
+    handleDiscardDraft,
+    handleSubmit,
+    copyAsFetch
+  } = useResourceForm({ path, method, resolvedPath, onSuccess });
+
+  const { parsedSpec } = useSpecStore();
 
   const rawSchema = getSchema(operation);
   const components = parsedSpec?.raw.components;
   const schema = useMemo(() => {
     return rawSchema ? resolveSchema(rawSchema, components) : null;
   }, [rawSchema, components]);
-
   const properties = schema?.properties ?? {};
   const required = schema?.required ?? [];
-  const resolvedPath = path.replace(/\{([^}]+)\}/g, (_, key: string) => pathParams[key] ?? `:${key}`);
+
+  // Detect missing path parameters to disable submit and warn the user
   const pathParamNames = extractPathParamNames(path);
   const missingParams = pathParamNames.filter((name) => !pathParams[name]);
-
-  const {
-    response,
-    isLoading,
-    showResponse,
-    setShowResponse,
-    handleSubmit,
-    copyAsFetch,
-  } = useResourceSubmit(
-    getActiveEnvironment,
-    method,
-    resolvedPath,
-    formData,
-    onSuccess,
-    clearDraft
-  );
 
   const methodColor: Record<string, string> = {
     post: 'bg-green-500/10 text-green-600 border-green-500/30',
@@ -135,7 +117,7 @@ export function ResourceForm({ path, method, operation, pathParams = {}, onSucce
               type="button"
               variant="outline"
               size="sm"
-              onClick={copyAsFetch}
+              onClick={() => copyAsFetch()}
               disabled={missingParams.length > 0}
             >
               Copy as Fetch

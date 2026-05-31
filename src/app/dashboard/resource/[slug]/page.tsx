@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ResourceNode, OperationObject } from '@/lib/types';
 import { extractPathParamNames } from '@/lib/utils';
-import { Database, Zap, Box, KeyRound } from 'lucide-react';
+import { Database, Zap, Box, KeyRound, Star } from 'lucide-react';
 
 function findNodeBySlug(nodes: ResourceNode[], slug: string): ResourceNode | null {
   if (!nodes) return null;
@@ -38,7 +38,7 @@ interface PageProps {
 export default function ResourcePage({ params }: PageProps) {
   const { slug } = use(params);
   const decodedSlug = decodeURIComponent(slug);
-  const { parsedSpec, pathParams, setPathParam } = useSpecStore();
+  const { parsedSpec, pathParams, setPathParam, preferences, specSource, toggleFavorite } = useSpecStore();
 
   if (!parsedSpec) return null;
 
@@ -65,6 +65,7 @@ export default function ResourcePage({ params }: PageProps) {
   const mutationMethods = Object.keys(node.operations).filter((m) => m !== 'get');
 
   const defaultTab = hasList ? 'list' : mutationMethods[0] ?? 'info';
+  const isFavorite = specSource && preferences[specSource]?.favorites?.includes(node.path);
 
   return (
     <div className="p-6 max-w-5xl">
@@ -73,6 +74,13 @@ export default function ResourcePage({ params }: PageProps) {
         <div className="flex items-center gap-2 mb-1">
           <TypeIcon className="h-5 w-5 text-muted-foreground" />
           <h1 className="text-xl font-bold">{node.name}</h1>
+          <button
+            onClick={() => toggleFavorite(node.path)}
+            className={`p-1 rounded hover:bg-accent transition-colors ${isFavorite ? 'text-yellow-500' : 'text-muted-foreground'}`}
+            title={isFavorite ? "Remove from Favorites" : "Add to Favorites"}
+          >
+            <Star className={`h-5 w-5 ${isFavorite ? 'fill-current' : ''}`} />
+          </button>
           <Badge variant="outline" className="text-xs font-mono">{node.type}</Badge>
         </div>
         <div className="flex items-center gap-2">
