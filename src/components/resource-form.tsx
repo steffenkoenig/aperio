@@ -8,13 +8,11 @@ import { Loader2, Send, ChevronDown, ChevronUp, ChevronRight, Plus, Trash2 } fro
 import { OperationObject, SchemaObject, OpenApiSpec } from '@/lib/types';
 import { useSpecStore } from '@/store/spec-store';
 import { resolveSchema } from '@/lib/schema-resolver';
-import { BookmarkSaveDialog } from '@/components/bookmark-save-dialog';
 import { toast } from 'sonner';
 import { cn, extractPathParamNames } from '@/lib/utils';
 
 interface ResourceFormProps {
   path: string;
-  slug: string;
   method: string;
   operation: OperationObject;
   pathParams?: Record<string, string>;
@@ -283,29 +281,13 @@ export function FormField({ name, schema, value, onChange, required, components 
   );
 }
 
-export function ResourceForm({ path, slug, method, operation, pathParams = {}, onSuccess }: ResourceFormProps) {
+export function ResourceForm({ path, method, operation, pathParams = {}, onSuccess }: ResourceFormProps) {
   const [formData, setFormData] = useState<Record<string, unknown>>({});
   const [response, setResponse] = useState<unknown>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showResponse, setShowResponse] = useState(false);
   const [isDraftLoaded, setIsDraftLoaded] = useState(false);
-  const { getActiveEnvironment, parsedSpec, activeBookmark, clearActiveBookmark, setPathParam } = useSpecStore();
-
-  useEffect(() => {
-    if (activeBookmark && activeBookmark.type === 'form' && activeBookmark.slug === slug && activeBookmark.method === method) {
-      if (activeBookmark.formData) {
-        setFormData(activeBookmark.formData);
-      }
-
-      if (activeBookmark.pathParams) {
-        Object.entries(activeBookmark.pathParams).forEach(([key, val]) => {
-          setPathParam(key, val);
-        });
-      }
-
-      clearActiveBookmark();
-    }
-  }, [activeBookmark, slug, method, setPathParam, clearActiveBookmark]);
+  const { getActiveEnvironment, parsedSpec } = useSpecStore();
 
   const draftKey = `draft_${parsedSpec?.title ?? 'default'}_${method.toUpperCase()}_${path}`;
 
@@ -320,7 +302,7 @@ export function ResourceForm({ path, slug, method, operation, pathParams = {}, o
           duration: 3000,
         });
       }
-    } catch (_e) {
+    } catch {
       // Ignore local storage errors
     }
     setIsDraftLoaded(true);
@@ -336,7 +318,7 @@ export function ResourceForm({ path, slug, method, operation, pathParams = {}, o
         } else {
           localStorage.removeItem(draftKey);
         }
-      } catch (_e) {
+      } catch {
         // Ignore local storage errors (quota exceeded, etc)
       }
     }, 500);
@@ -348,7 +330,7 @@ export function ResourceForm({ path, slug, method, operation, pathParams = {}, o
     setFormData({});
     try {
       localStorage.removeItem(draftKey);
-    } catch (_e) {}
+    } catch {}
     toast.success('Draft discarded');
   };
 
@@ -407,9 +389,9 @@ export function ResourceForm({ path, slug, method, operation, pathParams = {}, o
         // Clear draft on successful submit
         try {
           localStorage.removeItem(draftKey);
-        } catch (_e) {}
+        } catch {}
       } else {
-        const details = typeof result === 'object' && result !== null && 'error' in result ? String((result as { error?: unknown }).error) : '';
+        const details = typeof result === 'object' && result !== null && 'error' in result ? String((result as Record<string, unknown>).error) : '';
         const msg = details ? `${res.status}: ${details}` : `${res.status} ${res.statusText || ''}`;
         toast.error(`${method.toUpperCase()} ${resolvedPath} – ${msg}`);
       }
@@ -538,14 +520,6 @@ export function ResourceForm({ path, slug, method, operation, pathParams = {}, o
             >
               Copy as Fetch
             </Button>
-
-            <BookmarkSaveDialog
-              type="form"
-              path={path}
-              slug={slug}
-              method={method}
-              formData={formData}
-            />
           </div>
         </form>
 

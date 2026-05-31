@@ -153,3 +153,17 @@ export interface AperioConfig {
   environments: AppEnvironment[];
   activeEnvironmentId?: string;
 }
+
+export interface SavedView {
+  id: string;
+  name: string;
+  resourcePath: string;
+  columnVisibility: Record<string, boolean>;
+  globalFilter: string;
+  sorting: { id: string; desc: boolean }[];
+}
+
+export interface SpecPreferences {
+  favorites: string[];
+  savedViews: SavedView[];
+}
