@@ -145,6 +145,13 @@ export interface AperioConfig {
 export interface SavedView {
   id: string;
   name: string;
-  sorting: any[];
+  resourcePath: string;
+  columnVisibility: Record<string, boolean>;
   globalFilter: string;
+  sorting: { id: string; desc: boolean }[];
+}
+
+export interface SpecPreferences {
+  favorites: string[];
+  savedViews: SavedView[];
 }

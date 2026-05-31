@@ -5,10 +5,10 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ResourceNode } from '@/lib/types';
 import { ChevronRight, Database, Zap, Box, FolderOpen, Folder, Star } from 'lucide-react';
-import { useSpecStore } from '@/store/spec-store';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useSpecStore } from '@/store/spec-store';
 
 interface SidebarNavProps {
   nodes: ResourceNode[];
@@ -41,11 +41,12 @@ function NodeIcon({ node, className }: { node: ResourceNode; className?: string 
 interface NavItemProps {
   node: ResourceNode;
   depth: number;
-  favorites: string[];
-  onToggleFavorite: (id: string) => void;
 }
 
-function NavItem({ node, depth, favorites, onToggleFavorite }: NavItemProps) {
+function NavItem({ node, depth }: NavItemProps) {
+  const { specSource, preferences, toggleFavorite } = useSpecStore();
+  const isFavorited = !!(specSource && preferences[specSource]?.favorites?.includes(node.path));
+
   const pathname = usePathname();
   const [expanded, setExpanded] = useState(true);
   const hasChildren = node.children.length > 0;
@@ -53,7 +54,6 @@ function NavItem({ node, depth, favorites, onToggleFavorite }: NavItemProps) {
   const isActive = pathname === nodeHref;
 
   const nonGetMethods = node.methods.filter((m) => m !== 'get');
-  const isFavorite = favorites.includes(node.id);
 
   return (
     <div>
@@ -83,18 +83,18 @@ function NavItem({ node, depth, favorites, onToggleFavorite }: NavItemProps) {
         <Link href={nodeHref} className="flex-1 truncate">
           {node.name}
         </Link>
-        {onToggleFavorite && (
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onToggleFavorite(node.id);
-            }}
-            className="flex-shrink-0 text-muted-foreground hover:text-yellow-500 transition-colors"
-          >
-            <Star className={cn("h-3.5 w-3.5", isFavorite ? "fill-yellow-500 text-yellow-500" : "")} />
-          </button>
-        )}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleFavorite(node.path);
+          }}
+          className={cn(
+            "p-0.5 rounded transition-opacity",
+            isFavorited ? "opacity-100 text-yellow-500 hover:text-yellow-600" : "opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <Star className={cn("h-3 w-3", isFavorited && "fill-current")} />
+        </button>
         {nonGetMethods.length > 0 && (
           <div className="flex gap-0.5">
             {nonGetMethods.slice(0, 2).map((m) => (
@@ -118,7 +118,7 @@ function NavItem({ node, depth, favorites, onToggleFavorite }: NavItemProps) {
       {hasChildren && expanded && (
         <div>
           {node.children.map((child) => (
-            <NavItem key={child.id} node={child} depth={depth + 1} favorites={favorites} onToggleFavorite={onToggleFavorite} />
+            <NavItem key={child.id} node={child} depth={depth + 1} />
           ))}
         </div>
       )}
@@ -126,33 +126,23 @@ function NavItem({ node, depth, favorites, onToggleFavorite }: NavItemProps) {
   );
 }
 
-
 export function SidebarNav({ nodes, specTitle }: SidebarNavProps) {
-  const { favorites, addFavorite, removeFavorite } = useSpecStore();
+  const { specSource, preferences } = useSpecStore();
+  const currentFavorites = (specSource && preferences[specSource]?.favorites) || [];
 
-  const handleToggleFavorite = (id: string) => {
-    if (favorites.includes(id)) {
-      removeFavorite(id);
-    } else {
-      addFavorite(id);
-    }
-  };
-
-  // Helper to find a node by ID anywhere in the tree
-  const findNodeById = (nodeList: ResourceNode[], id: string): ResourceNode | null => {
+  // Helper to find a node by path
+  const findNodeByPath = (nodeList: ResourceNode[], targetPath: string): ResourceNode | undefined => {
     for (const node of nodeList) {
-      if (node.id === id) return node;
-      if (node.children.length > 0) {
-        const found = findNodeById(node.children, id);
-        if (found) return found;
-      }
+      if (node.path === targetPath) return node;
+      const found = findNodeByPath(node.children, targetPath);
+      if (found) return found;
     }
-    return null;
+    return undefined;
   };
 
-  const favoriteNodes = favorites
-    .map(id => findNodeById(nodes, id))
-    .filter((node): node is ResourceNode => node !== null);
+  const favoriteNodes = currentFavorites
+    .map(path => findNodeByPath(nodes, path))
+    .filter((node): node is ResourceNode => node !== undefined);
 
   return (
     <aside className="flex flex-col w-64 border-r bg-background h-full">
@@ -178,29 +168,17 @@ export function SidebarNav({ nodes, specTitle }: SidebarNavProps) {
           <div className="h-px bg-border my-2" />
           {favoriteNodes.length > 0 && (
             <div className="mb-4">
-              <div className="px-2 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Favorites
+              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                <Star className="h-3 w-3 fill-current text-yellow-500" /> Favorites
               </div>
               {favoriteNodes.map((node) => (
-                <NavItem
-                  key={`fav-${node.id}`}
-                  node={node}
-                  depth={0}
-                  favorites={favorites}
-                  onToggleFavorite={handleToggleFavorite}
-                />
+                <NavItem key={`fav-${node.id}`} node={node} depth={0} />
               ))}
               <div className="h-px bg-border my-2" />
             </div>
           )}
           {nodes.map((node) => (
-            <NavItem
-              key={node.id}
-              node={node}
-              depth={0}
-              favorites={favorites}
-              onToggleFavorite={handleToggleFavorite}
-            />
+            <NavItem key={node.id} node={node} depth={0} />
           ))}
         </div>
       </ScrollArea>
