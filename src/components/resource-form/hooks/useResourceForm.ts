@@ -19,6 +19,15 @@ export function useResourceForm({ path, method, resolvedPath, onSuccess }: UseRe
 
   const draftKey = `draft_${parsedSpec?.title ?? 'default'}_${method.toUpperCase()}_${path}`;
 
+  // Reset form state synchronously during render when switching resources,
+  // preventing stale formData from leaking into the new resource's auto-save.
+  const [prevDraftKey, setPrevDraftKey] = useState(draftKey);
+  if (draftKey !== prevDraftKey) {
+    setFormData({});
+    setIsDraftLoaded(false);
+    setPrevDraftKey(draftKey);
+  }
+
   useEffect(() => {
     try {
       const draft = localStorage.getItem(draftKey);
@@ -28,6 +37,8 @@ export function useResourceForm({ path, method, resolvedPath, onSuccess }: UseRe
           description: 'Your previous form data has been loaded.',
           duration: 3000,
         });
+      } else {
+        setFormData({});
       }
         } catch {
       // Ignore local storage errors
@@ -115,7 +126,7 @@ export function useResourceForm({ path, method, resolvedPath, onSuccess }: UseRe
     }
   };
 
-  const copyAsFetch = (options: { formData: Record<string, unknown>, method: string, resolvedPath: string }) => {
+  const copyAsFetch = () => {
     const env = getActiveEnvironment();
     if (!env?.baseUrl) {
       toast.error('No base URL configured.');
@@ -123,7 +134,7 @@ export function useResourceForm({ path, method, resolvedPath, onSuccess }: UseRe
     }
 
     const headers: Record<string, string> = {};
-    const hasBody = Object.keys(options.formData).length > 0;
+    const hasBody = Object.keys(formData).length > 0;
     if (hasBody) {
       headers['Content-Type'] = 'application/json';
     }
@@ -136,18 +147,13 @@ export function useResourceForm({ path, method, resolvedPath, onSuccess }: UseRe
       headers['Authorization'] = `Basic ${btoa(env.authValue)}`;
     }
 
-    const reqOptions: RequestInit = {
-      method: options.method.toUpperCase(),
-      headers,
-    };
-
+    const upperMethod = method.toUpperCase();
     let bodyStr = '';
     if (hasBody) {
-      bodyStr = JSON.stringify(options.formData, null, 2);
-      reqOptions.body = bodyStr;
+      bodyStr = JSON.stringify(formData, null, 2);
     }
 
-    const fetchCode = `fetch('${env.baseUrl}${options.resolvedPath}', {\n  method: '${reqOptions.method}',\n  headers: ${JSON.stringify(reqOptions.headers, null, 2).replace(/\n/g, '\n  ')}${bodyStr ? `,\n  body: JSON.stringify(${bodyStr.replace(/\n/g, '\n  ')})` : ''}\n});`;
+    const fetchCode = `fetch('${env.baseUrl}${resolvedPath}', {\n  method: '${upperMethod}',\n  headers: ${JSON.stringify(headers, null, 2).replace(/\n/g, '\n  ')}${bodyStr ? `,\n  body: JSON.stringify(${bodyStr.replace(/\n/g, '\n  ')})` : ''}\n});`;
 
     if (!navigator.clipboard) {
       toast.error('Clipboard API not available in this browser/context');

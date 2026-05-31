@@ -117,7 +117,7 @@ export function ResourceForm({ path, method, operation, pathParams = {}, onSucce
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => copyAsFetch({ formData, method, resolvedPath })}
+              onClick={() => copyAsFetch()}
               disabled={missingParams.length > 0}
             >
               Copy as Fetch
