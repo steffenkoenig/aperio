@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
-import { ResourceForm } from './index';
+import { ResourceForm } from '@/components/resource-form';
 import { useSpecStore } from '../../store/spec-store';
 
 jest.mock('../../store/spec-store', () => ({
