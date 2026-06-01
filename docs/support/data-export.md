@@ -1,35 +1,21 @@
 # Troubleshooting: Data Export
 
-This playbook assists support personnel in diagnosing issues related to the Data Export functionality in the `ResourceTable`.
+This guide assists in troubleshooting issues related to the Data Export feature in Aperio.
 
-## 1. Export Button is Disabled
+## Common Issues
 
-**Symptom:** The user navigates to a table, but the Export button is greyed out and cannot be clicked.
+### 1. The Export button is disabled
+*   **Cause:** The Export button is dynamically disabled when the table is actively loading data (`isLoading === true`) or when the table has zero rows (either due to no data being returned from the API, or global filters hiding all records).
+*   **Resolution:** Wait for the API request to finish loading. If the table is empty, ensure the target API contains data, or clear the `Global Filter` search box to reveal records.
 
-**Triage Steps:**
-- **Check Data Presence:** The export button is intentionally disabled if the table is empty (`table.getFilteredRowModel().rows.length === 0`). The user must ensure data is actually loaded and not filtered out by the search bar.
-- **Check Loading State:** The button is disabled while data is actively being fetched from the API (`isLoading === true`). Instruct the user to wait for the loading spinner to disappear.
+### 2. Exported CSV contains `[object Object]`
+*   **Cause:** The underlying API data contains deeply nested circular structures that the JSON stringifier cannot safely serialize.
+*   **Resolution:** The `export-utils` logic attempts to stringify complex nested properties. If a circular reference exists, it safely falls back to `String()`, which yields `[object Object]`. Review the API schema to determine if circular references are intended. Consider exporting as JSON to retain the raw structured output if the CSV formatter fails.
 
-## 2. Exported CSV Contains `[object Object]`
+### 3. Not all data is exported
+*   **Cause:** The export function only captures the data currently loaded into the browser memory by the table. If the API utilizes pagination (returning 50 records out of a total 1000), only the 50 visible records will be exported.
+*   **Resolution:** Check if the API supports modifying the page limit via query parameters (e.g., `?limit=1000`) and adjust the URL parameters if necessary to fetch a larger batch before exporting. Note that fetching massive datasets directly into the browser may cause performance degradation.
 
-**Symptom:** The user downloads a CSV, but some columns display `[object Object]` instead of actual data.
-
-**Triage Steps:**
-- **Identify Circular References:** This occurs when the `serializeComplexData` utility encounters a JavaScript object with a circular reference, preventing `JSON.stringify` from operating.
-- **Resolution:** This usually indicates a deeply nested or improperly formatted response from the target API. Ask the user to provide the OpenAPI specification for that endpoint and a sample JSON response (if possible) to report to engineering.
-
-## 3. Only Partial Data is Exported
-
-**Symptom:** The user claims they have 500 records in their database, but the exported file only contains 20.
-
-**Triage Steps:**
-- **Explain Client-Side Scope:** The export function only captures the data currently visible/loaded in the table view.
-- **Check API Pagination:** If the target API utilizes pagination (e.g., returning 20 items per page), the user will only export that single page. Aperio does not currently traverse multiple pages to compile a full database export automatically.
-
-## 4. Nothing Happens When Clicking Export
-
-**Symptom:** The user clicks "Export as CSV" but no file is downloaded.
-
-**Triage Steps:**
-- **Check Browser Settings:** Ensure the user's browser is not blocking automatic downloads. Some strict enterprise browser policies disable programmatic Blob downloads.
-- **Check Console:** Ask the user to open Developer Tools (F12) and check the Console tab for any JavaScript errors (e.g., memory limits exceeded during the `convertToCSV` process for massive datasets).
+### 4. Browser blocks the download
+*   **Cause:** Aggressive popup blockers or corporate security policies may prevent the automatic download triggered by the programmatic anchor click.
+*   **Resolution:** Advise the user to check their browser's URL bar for a "Pop-up blocked" icon and allow downloads from the Aperio domain.

@@ -1,28 +1,27 @@
 # Data Export Architecture
 
-The Data Export feature enables extracting tabular data directly from the browser environment, implementing Proposal 10 of the Aperio improvement roadmap.
+The Data Export functionality allows client-side extraction of tabular data into CSV or JSON formats. This is implemented directly within the `ResourceTable` component.
 
-## Implementation Details
+## Core Modules
 
-The core logic resides in `src/lib/export-utils.ts` and `src/components/resource-table/index.tsx`.
+*   `src/components/resource-table/index.tsx`: Contains the UI integration for the `Export` dropdown button. It leverages the TanStack Table instance's `getFilteredRowModel().rows` to ensure only the currently filtered/visible dataset is passed to the export utility.
+*   `src/lib/export-utils.ts`: Contains pure functions for data transformation and client-side download invocation.
 
-### `ResourceTable` Component Updates
-The `ResourceTable` component has been extended to include an "Export" dropdown menu.
-- It relies on `@tanstack/react-table`'s `table.getFilteredRowModel().rows` to fetch the currently active and filtered dataset.
-- Filename generation dynamically extracts the resource name from the component's `path` prop and appends the current ISO date. (e.g. `users_export_2023-10-27.csv`).
+## Data Transformation Logic
 
-### `export-utils.ts`
-Two primary utilities govern data transformation:
-1. `convertToCSV(data)`: Accepts an array of object records.
-   - It dynamically extracts all unique keys across the dataset to form the CSV headers.
-   - It iterates through each row, escaping internal quotes and wrapping values in double quotes to conform to standard CSV encoding.
-2. `serializeComplexData(val)`: Handles non-primitive data types (objects, arrays) by attempting `JSON.stringify`. If it encounters non-serializable objects (like circular references), it gracefully falls back to `String(val)`.
+### JSON Export
+The `exportTableToJSON` function simply stringifies the array of object records using `JSON.stringify(data, null, 2)` and creates a Blob of type `application/json`.
 
-### Client-Side File Generation
-The `downloadFile` function utilizes the browser's `Blob` and `URL.createObjectURL` APIs to trigger a programmatic download.
+### CSV Export
+The `convertToCSV` function handles the conversion of JSON records to a flat CSV structure:
+1.  **Header Extraction:** It iterates through all provided records to build a union set of all object keys. This handles arrays where objects might have varying schemas.
+2.  **Complex Data Serialization:** It uses `serializeComplexData` to handle non-primitive values.
+    *   Arrays and generic objects are converted to strings via `JSON.stringify`.
+    *   If `JSON.stringify` throws an error (e.g., circular references, though unlikely from API responses), it falls back to `String(val)`.
+3.  **Escaping:** Every value is converted to a string. Double quotes (`"`) within strings are escaped by doubling them (`""`), and the entire field is wrapped in double quotes to prevent conflicts with delimiter commas or internal line breaks.
 
-## Architectural Constraints & Considerations
+## Download Invocation
+The `downloadFile` function utilizes the browser's native `Blob` and `URL.createObjectURL` APIs. It creates an invisible anchor (`<a>`) element, sets the `href` to the Blob URL, triggers a programmatic `click()`, and cleans up the element and URL object. This ensures data never leaves the client browser for processing.
 
-- **Pagination Limitations:** The export strictly processes the data currently held in the client's memory. It does not natively traverse paginated API endpoints to fetch a full collection.
-- **Performance:** For exceptionally large datasets (e.g., thousands of rows returned in a single request), the synchronous CSV conversion could briefly block the main UI thread.
-- **Security & GDPR:** Because conversion utilizes native browser APIs (Blob), no network requests are dispatched during the export phase. This fulfills the strict security constraint that sensitive administrative data must not leave the client boundary for external processing.
+## Security & Compliance
+Since the transformation and download happen entirely on the client side, no data is transmitted to an external service for conversion. This ensures that potentially sensitive API data accessed by the user remains secure and adheres to GDPR data minimization principles.

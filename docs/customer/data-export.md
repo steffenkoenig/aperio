@@ -1,26 +1,24 @@
 # Data Export
 
-Aperio allows you to easily extract data from any resource table into standard formats for offline analysis, reporting, or record-keeping.
+The Data Export feature enables you to download the data displayed in your Aperio Resource Tables directly to your computer.
+
+## Supported Formats
+
+Currently, you can export your data in two widely used formats:
+
+*   **CSV (Comma-Separated Values):** Best for viewing in spreadsheet applications like Microsoft Excel, Google Sheets, or Apple Numbers.
+*   **JSON (JavaScript Object Notation):** Best for programmatic use, automation scripts, or further processing in other software tools.
 
 ## How to Export Data
 
-1. Navigate to any resource in the sidebar that displays a data table (typically a `GET` collection endpoint).
-2. Ensure the data you want to export is currently loaded and visible. (Note: Data export applies to the currently loaded dataset).
-3. Click the **Export** button located in the top right corner above the data table.
-4. Select your preferred format:
-   - **Export as CSV**: Best for opening in spreadsheet applications like Microsoft Excel or Google Sheets.
-   - **Export as JSON**: Best for programmatic use or importing into other tools.
-5. Your browser will automatically download the file. The file will be named according to the resource and the current date (e.g., `users_export_2023-10-27.csv`).
+1.  Navigate to any resource in the sidebar that returns a collection of items (a `GET` endpoint displaying a `ResourceTable`).
+2.  (Optional) Apply any desired **Global Filters** or **Sorting**. The export function respects the data currently visible and fetched on your screen.
+3.  In the top-right corner of the table, locate the **Export** button with the download icon.
+4.  Click the **Export** button to open the dropdown menu.
+5.  Select either **Export as CSV** or **Export as JSON**.
+6.  The browser will automatically generate the file and prompt you to save it. The file will be named dynamically based on the current timestamp (e.g., `export-1701234567890.csv`).
 
-## Handling Complex Data
+## Limitations
 
-Some fields in your API may contain complex data like nested objects or lists (arrays).
-
-- **In JSON Export**: These structures are preserved exactly as they are in the API response.
-- **In CSV Export**: Since CSV is a flat format, nested structures are converted into JSON text strings within their respective column. This ensures no data is lost during the export process.
-
-## Privacy & Security
-
-All data export formatting and file generation happens entirely **within your local web browser**. Your data is never sent to external servers or third-party conversion services by Aperio.
-
-*Reminder*: If you are working with sensitive or Personally Identifiable Information (PII), please ensure you are adhering to your organization's compliance guidelines (such as GDPR or CCPA) when storing exported files on your local device.
+*   **Pagination:** The export only contains the data currently fetched by the table. If your API paginates results and you are only viewing the first page, only the first page will be exported.
+*   **Nested Objects in CSV:** When exporting to CSV, complex nested objects or arrays within a single field are converted to JSON strings to maintain structural integrity within the flat CSV format.
