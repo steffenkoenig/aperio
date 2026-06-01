@@ -8,7 +8,7 @@ When editing an existing, complex resource (like a large configuration object wi
 
 ## Proposed Changes
 - **Diff Button:** Introduce a "Review Changes" button adjacent to the submit button in the `ResourceForm` when editing an existing resource.
-- **State Comparison:** When clicked, intercept the form state. Fetch or retrieve the original, unmodified state of the resource (either from a cached GET request or by passing the initial state into the form component).
+- **State Comparison:** When clicked, intercept the form state. Fetch the fresh, latest state of the resource directly from the API (to prevent stale-state comparison or race conditions if other users updated the resource concurrently) rather than relying solely on cached GET data or initial mounting state.
 - **Diff Calculation:** Implement a client-side JSON diffing utility to compare the `originalData` against the `formData`.
 - **Diff Modal/UI:** Display a modal showing a side-by-side or inline visual diff (similar to a Git diff) highlighting exactly which fields were added, modified, or removed.
 - **Confirmation Step:** Require the user to confirm the changes from within the diff modal to finalize the submission.
@@ -28,7 +28,7 @@ When editing an existing, complex resource (like a large configuration object wi
   - `/docs/support`: Explain how the diff viewer handles complex data types like arrays and potential limitations.
 - **Testing:** Comprehensive unit tests for the JSON diffing logic are critical to ensure accurate reporting of changes, especially for deeply nested objects and array reorderings. Component tests will verify the rendering of the diff modal and the submission flow.
 - **Security:** Ensure the diff viewer safely renders user input to prevent Cross-Site Scripting (XSS) if the data contains potentially malicious strings.
-- **Reliability:** The diffing algorithm must be optimized to not block the main thread, even when comparing very large JSON payloads. Use Web Workers if necessary for massive objects.
+- **Reliability:** The diffing algorithm must be optimized to not block the main thread, even when comparing very large JSON payloads. Use Web Workers if necessary for massive objects. Ensure a fresh GET request is dispatched to fetch the latest server-side resource state immediately when the review action is triggered.
 - **Accessibility:** Visual diffs relying solely on color (red for delete, green for add) must be supplemented with accessible text (e.g., `<del>` and `<ins>` tags, or visually hidden text like "Added:", "Removed:") to support screen reader users and users with color blindness.
 - **GDPR Compliance:** The entire diff calculation and rendering process occurs locally in the user's browser. No data is transmitted to external servers for comparison, fully adhering to data privacy standards.
 
