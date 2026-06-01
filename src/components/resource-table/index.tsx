@@ -58,6 +58,10 @@ export function ResourceTable({ path, pathParams = {} }: ResourceTableProps) {
 
   const columns = inferColumns(data);
 
+  const resourceName = path.split('/').filter(Boolean).pop() || 'export';
+  const currentDate = new Date().toISOString().split('T')[0];
+  const baseExportName = `${resourceName}_export_${currentDate}`;
+
   const table = useReactTable({
     data,
     columns,
@@ -117,10 +121,10 @@ export function ResourceTable({ path, pathParams = {} }: ResourceTableProps) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => exportTableToCSV(table.getFilteredRowModel().rows.map(row => row.original), `export-${Date.now()}.csv`)}>
+            <DropdownMenuItem onClick={() => exportTableToCSV(table.getFilteredRowModel().rows.map(row => row.original), `${baseExportName}.csv`)}>
               Export as CSV
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => exportTableToJSON(table.getFilteredRowModel().rows.map(row => row.original), `export-${Date.now()}.json`)}>
+            <DropdownMenuItem onClick={() => exportTableToJSON(table.getFilteredRowModel().rows.map(row => row.original), `${baseExportName}.json`)}>
               Export as JSON
             </DropdownMenuItem>
           </DropdownMenuContent>
