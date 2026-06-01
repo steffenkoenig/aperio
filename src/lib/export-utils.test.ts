@@ -77,8 +77,23 @@ describe('export-utils', () => {
     let mockAnchor: HTMLAnchorElement;
 
     beforeEach(() => {
-      global.URL.createObjectURL = jest.fn(() => 'mock-url');
-      global.URL.revokeObjectURL = jest.fn();
+      if (typeof global.URL.createObjectURL === 'undefined') {
+        Object.defineProperty(global.URL, 'createObjectURL', {
+          value: jest.fn(),
+          writable: true,
+          configurable: true,
+        });
+      }
+      if (typeof global.URL.revokeObjectURL === 'undefined') {
+        Object.defineProperty(global.URL, 'revokeObjectURL', {
+          value: jest.fn(),
+          writable: true,
+          configurable: true,
+        });
+      }
+
+      jest.spyOn(global.URL, 'createObjectURL').mockReturnValue('mock-url');
+      jest.spyOn(global.URL, 'revokeObjectURL').mockImplementation(() => {});
 
       clickSpy = jest.fn();
       mockAnchor = {

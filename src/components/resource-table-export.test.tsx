@@ -1,11 +1,11 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { ResourceTable } from '../components/resource-table';
-import { useSpecStore } from '../store/spec-store';
-import * as exportUtils from '../lib/export-utils';
+import { ResourceTable } from '@/components/resource-table';
+import { useSpecStore } from '@/store/spec-store';
+import * as exportUtils from '@/lib/export-utils';
 
 jest.mock('sonner', () => ({ toast: { success: jest.fn(), error: jest.fn() } }));
-jest.mock('../lib/export-utils', () => ({
+jest.mock('@/lib/export-utils', () => ({
   exportTableToCSV: jest.fn(),
   exportTableToJSON: jest.fn(),
 }));
@@ -29,17 +29,25 @@ describe('ResourceTable - Export Functionality', () => {
     useSpecStore.setState({
       activeEnvironmentId: 'default',
       environments: [{ id: 'default', name: 'Default', baseUrl: 'http://localhost', authType: 'none' }],
-      parsedSpec: { title: 'TestAPI', version: '1.0' } as unknown as import('../lib/types').ParsedSpec,
+      parsedSpec: { title: 'TestAPI', version: '1.0' } as unknown as import('@/lib/types').ParsedSpec,
       specSource: 'https://example.com/spec.json',
       preferences: {},
     });
 
-    global.fetch = jest.fn(() =>
+    if (typeof global.fetch === 'undefined') {
+      Object.defineProperty(global, 'fetch', {
+        value: jest.fn(),
+        writable: true,
+        configurable: true,
+      });
+    }
+
+    jest.spyOn(global, 'fetch').mockImplementation(() =>
       Promise.resolve({
         ok: true,
         json: () => Promise.resolve([{ id: 1, name: 'John Doe', role: 'admin' }]),
-      })
-    ) as jest.Mock;
+      }) as Promise<Response>
+    );
   });
 
   afterEach(() => {
