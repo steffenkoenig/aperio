@@ -1,5 +1,17 @@
 # Builder Task Ledger
 
+## Milestone 3.0 - Data Export (Proposal 10)
+
+**Current State Audit:** Evaluated current state. Verified that `export-utils.ts` and `ResourceTable` export dropdowns are structurally implemented, but test assertions and explicit documentation are missing.
+**Completed Items:**
+- [x] Create Unit Tests for `export-utils.ts` -> Attached Test: `export-utils.test.ts`
+- [x] Add Component Tests for Export Buttons -> Attached Test: `resource-table-export.test.tsx`
+- [x] Update Documentation across all three targets -> Docs Updated: Customer (`data-export.md`, `release-notes.md`), Technical (`data-export.md`), Support (`data-export.md`)
+**Active Step:** Finished pre-commit.
+**Blockers/Constraints:** None.
+
+---
+
 ## Milestone 2.0 - Batch 3 Proposal Generation
 
 **Current State Audit:** Evaluated current implementation plans and user requests for further improvements. Generated 3 new platform-focused proposals without relying on external connections or AI functionalities.
@@ -13,7 +25,7 @@
 - [x] Write Proposal 12: Activity Audit Emails (`docs/proposals/proposal-12-activity-audit-emails.md`).
 - [x] Add headers/audit states as directed.
 
-**Active Step:** Complete Pre-commit steps and final checks.
+**Active Step:** Completed.
 
 **Blockers/Constraints:** None.
 
@@ -27,7 +39,7 @@
 - [x] Inject Favorites sidebar section into `SidebarNav`. -> Manual test
 - [x] Update `ResourceTable` to support state saving via dropdown and Shadcn Dialog. -> Manual test
 - [x] Update Documentation across all three targets. -> Docs Updated: Customer, Technical, Support
-**Active Step:** Final test suite execution and pre-commit checks.
+**Active Step:** Completed.
 **Blockers/Constraints:** None.
 
 ---
@@ -42,7 +54,7 @@
 - [x] Documentation Sync -> Docs Updated: Customer (release notes), Technical (architecture tuple tracking), Support (troubleshooting unresolved $refs)
 - [x] Pre-commit and Final Code Review -> Attached Test: Passed locally
 
-**Active Step:** Submit PR
+**Active Step:** Completed.
 **Blockers/Constraints:** None. All tests passing cleanly.
 
 ---
@@ -55,7 +67,7 @@
 - [x] Integrate Favorites into Sidebar -> Attached Test: Passed locally via verification script
 - [x] Integrate Saved Views into Resource Table -> Attached Test: Passed locally via verification script
 - [x] Document Saved Views & Favorites -> Docs Updated: Customer, Technical, Support
-****Active Step:**** Submit PR
+****Active Step:**** Completed.
 ****Blockers/Constraints:**** None. All tests passing cleanly.
 
 ## Implementation Progress
@@ -107,7 +119,7 @@
 - [x] Document Command Palette -> Docs Updated: Customer, Technical, Support
 - [x] Implement Form Auto-Save -> Attached Test: `ResourceForm Auto-Save` suite
 - [x] Document Form Auto-Save -> Docs Updated: Customer, Technical, Support
-**Active Step:** Submit PR
+**Active Step:** Completed.
 **Blockers/Constraints:** None. All tests passing cleanly.
 
 ---
@@ -117,5 +129,5 @@
 **Completed Items:**
 - [x] Refactor `CommandDialog` mock to use strict typings instead of `any` -> Attached Test: `CommandPalette suite`
 - [x] Remove unused exception variables in `ResourceForm` auto-save logic -> Attached Test: `ResourceForm Auto-Save suite`
-**Active Step:** Complete Pre-commit steps and final checks.
+**Active Step:** Completed.
 **Blockers/Constraints:** None. All tests passing cleanly and linters passing.
