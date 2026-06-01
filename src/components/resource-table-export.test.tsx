@@ -80,4 +80,24 @@ describe('ResourceTable - Export Functionality', () => {
     fireEvent.click(jsonOption);
     expect(exportUtils.exportTableToJSON).toHaveBeenCalled();
   });
+
+  it('correctly filters out path parameters from export filename', async () => {
+    render(<ResourceTable path="/users/{id}/orders" pathParams={{ id: '123' }} />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Export')).toBeInTheDocument();
+    });
+
+    const exportBtn = screen.getByRole('button', { name: /export/i });
+    fireEvent.pointerDown(exportBtn);
+
+    const csvOption = await screen.findByRole('menuitem', { name: 'Export as CSV' });
+    fireEvent.click(csvOption);
+
+    const expectedDate = new Date().toISOString().split('T')[0];
+    expect(exportUtils.exportTableToCSV).toHaveBeenCalledWith(
+      expect.any(Array),
+      `orders_export_${expectedDate}.csv`
+    );
+  });
 });

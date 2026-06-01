@@ -12,6 +12,7 @@ export interface ResourceTableToolbarProps<TData> {
   isLoading: boolean;
   fetchData: () => Promise<void>;
   table: TanStackTable<TData>;
+  path: string;
 }
 
 export function ResourceTableToolbar<TData>({
@@ -20,7 +21,18 @@ export function ResourceTableToolbar<TData>({
   isLoading,
   fetchData,
   table,
+  path,
 }: ResourceTableToolbarProps<TData>) {
+  const getExportFilename = (extension: string) => {
+    const resourceName = path
+      .split('/')
+      .filter(Boolean)
+      .filter(segment => !segment.startsWith(':') && !segment.startsWith('{') && !segment.endsWith('}'))
+      .pop() || 'export';
+    const currentDate = new Date().toISOString().split('T')[0];
+    return `${resourceName}_export_${currentDate}.${extension}`;
+  };
+
   return (
     <div className="flex items-center gap-2">
       <div className="relative flex-1 max-w-xs">
@@ -45,10 +57,10 @@ export function ResourceTableToolbar<TData>({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => exportTableToCSV(table.getFilteredRowModel().rows.map(row => row.original as Record<string, unknown>), `export-${Date.now()}.csv`)}>
+          <DropdownMenuItem onClick={() => exportTableToCSV(table.getFilteredRowModel().rows.map(row => row.original as Record<string, unknown>), getExportFilename('csv'))}>
             Export as CSV
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => exportTableToJSON(table.getFilteredRowModel().rows.map(row => row.original as Record<string, unknown>), `export-${Date.now()}.json`)}>
+          <DropdownMenuItem onClick={() => exportTableToJSON(table.getFilteredRowModel().rows.map(row => row.original as Record<string, unknown>), getExportFilename('json'))}>
             Export as JSON
           </DropdownMenuItem>
         </DropdownMenuContent>

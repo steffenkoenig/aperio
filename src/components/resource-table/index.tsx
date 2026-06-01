@@ -40,6 +40,7 @@ export function ResourceTable({ path, pathParams = {} }: ResourceTableProps) {
         isLoading={isLoading}
         fetchData={fetchData}
         table={table}
+        path={path}
       />
 
       <ResourceTableViewManager
