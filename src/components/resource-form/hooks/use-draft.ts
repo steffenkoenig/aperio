@@ -1,42 +1,37 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
 export function useDraft(draftKey: string) {
   const [formData, setFormData] = useState<Record<string, unknown>>({});
   const [isDraftLoaded, setIsDraftLoaded] = useState(false);
-  const initialLoadRef = useRef(false);
+  const [prevDraftKey, setPrevDraftKey] = useState(draftKey);
+
+  if (draftKey !== prevDraftKey) {
+    setFormData({});
+    setIsDraftLoaded(false);
+    setPrevDraftKey(draftKey);
+  }
 
   useEffect(() => {
-    // Only load from localStorage once per draftKey
-    if (initialLoadRef.current) return;
-    initialLoadRef.current = true;
-
-    // Load draft on mount (defer to avoid synchronous setState cascading render warning)
+    // Force re-evaluation of localStorage when key changes
     const timer = setTimeout(() => {
       try {
         const draft = localStorage.getItem(draftKey);
         if (draft) {
-          setFormData(JSON.parse(draft) as Record<string, unknown>);
-          toast('Draft restored', {
-            description: 'Your previous form data has been loaded.',
-            duration: 3000,
-          });
+          const parsed = JSON.parse(draft);
+          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            setFormData(parsed as Record<string, unknown>);
+            toast('Draft restored', { description: 'Your previous form data has been loaded.', duration: 3000 });
+          }
         }
-      } catch {
-        // Ignore local storage errors
-      }
+      } catch {}
       setIsDraftLoaded(true);
     }, 0);
-
-    return () => {
-      clearTimeout(timer);
-      initialLoadRef.current = false; // Reset on unmount for Strict Mode
-    };
+    return () => clearTimeout(timer);
   }, [draftKey]);
 
   useEffect(() => {
     if (!isDraftLoaded) return;
-
     const handler = setTimeout(() => {
       try {
         if (Object.keys(formData).length > 0) {
@@ -44,26 +39,21 @@ export function useDraft(draftKey: string) {
         } else {
           localStorage.removeItem(draftKey);
         }
-      } catch {
-        // Ignore local storage errors (quota exceeded, etc)
-      }
+      } catch {}
     }, 500);
-
     return () => clearTimeout(handler);
   }, [formData, isDraftLoaded, draftKey]);
 
-  const handleDiscardDraft = () => {
+  const clearDraft = () => {
     setFormData({});
     try {
       localStorage.removeItem(draftKey);
     } catch {}
-    toast.success('Draft discarded');
   };
 
-  const clearDraft = () => {
-    try {
-      localStorage.removeItem(draftKey);
-    } catch {}
+  const handleDiscardDraft = () => {
+    clearDraft();
+    toast.success('Draft discarded');
   };
 
   return { formData, setFormData, handleDiscardDraft, clearDraft };
