@@ -1,19 +1,17 @@
-## Refactor Target: src/lib/ssrf.ts, src/lib/path-intelligence.ts, src/lib/schema-resolver.ts
+## Refactor Target: src/components/resource-form/hooks
 
 ****Identified Structural Flaw:****
-- `src/lib/ssrf.ts`: `isSafeUrl` is heavily bloated, containing a massive nested helper function (`isPrivateIp`) which internally manages deep conditionals for both IPv4 parsing and IPv6 string manipulation. This mixes hostname DNS resolution logic with low-level packet header validation.
-- `src/lib/path-intelligence.ts`: `buildResourceTree` attempts to do three distinct structural passes in a single monolithic block: parsing OpenAPI paths into nodes, resolving parent/child hierarchies, and executing custom sorting logic via an internal nested closure.
-- `src/lib/schema-resolver.ts`: `resolveSchema` traverses `$ref`, `allOf`, `anyOf`, `oneOf`, `properties`, and `items` in a single large execution flow, combining structural merging with recursive tree traversal, causing function bloat and cognitive friction.
+The hooks directory (`src/components/resource-form/hooks`) contained several redundant or bloated hook files that violated the max-lines-per-function limit. `useResourceForm.ts` specifically was a massive 170-line function containing form state initialization, local storage parsing, fetch request building, network call handling, toast notifications, and clipboard fetch copy logic. The `use-draft`, `use-form-draft`, `use-form-submit`, `use-resource-draft`, and `use-resource-submit` files were partially duplicating this functionality.
 
 ****Impact on Maintainability:****
-These structural flaws create significant cognitive overhead. Developers must trace through massive functions containing mixed responsibilities. Nested closures block individual subroutines from being isolated or explicitly mocked in unit tests. It violates the core architectural limit of 50-line maximums per function and prevents clean, testable subroutines.
+The massive monolithic nature of `useResourceForm` meant any form bug fix (e.g. proxy network headers vs localStorage quotas) required developers to trace through a massive block of React effect closures. Additionally, tests couldn't isolate the "submit builder" logic from the "draft loading" logic. The multiple overlapping draft/submit files caused confusion about which one was the authoritative source of truth.
 
 ****The Clean Architecture Blueprint:****
-- `src/lib/ssrf.ts`: Decompose `isPrivateIp` into explicit top-level functions `isPrivateIPv4` and `isPrivateIPv6`. Retain `isPrivateIp` as a simple routing layer, leaving `isSafeUrl` strictly focused on the core SSRF DNS checks.
-- `src/lib/path-intelligence.ts`: Decompose `buildResourceTree` into three strict, testable pipelines: `createResourceNodes`, `buildTreeStructure`, and `sortResourceNodes`.
-- `src/lib/schema-resolver.ts`: Extract distinct schema handlers (`resolveAllOf`, `resolveAnyOfOneOf`, `resolveProperties`, `resolveItems`) to isolate recursive logic from the primary `resolveSchema` orchestrator.
+- Standardize on three files: `use-draft.ts`, `use-form-submit.ts`, and the orchestrator `useResourceForm.ts`. Delete the unused redundant files (`use-form-draft.ts`, `use-resource-draft.ts`, `use-resource-submit.ts`).
+- `use-draft.ts`: Focus entirely on local storage synchronization.
+- `use-form-submit.ts`: Focus purely on the network layer proxy request generation and copy-as-fetch logic. Decompose headers and fetch code builders into pure functions `getHeaders` and `createFetchCode`. Extract error response handling into `handleResponse`.
+- `useResourceForm.ts`: Acts simply as an orchestrator tying the two specialized hooks together.
 
 ****Verification & Refactor Logic:****
-- Extract monolithic logic blocks into explicit, descriptive, single-purpose functions.
-- Run `npx eslint <file> --rule 'max-lines-per-function: ["error", 50]'` on all three targets to ensure strict limit compliance.
+- Ran `npx eslint src/components/resource-form/hooks --rule 'max-lines-per-function: ["error", 50]'`. Verified all files passed.
 - Run `npm run test` to verify complete functional parity and test suite success.

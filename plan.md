@@ -1,15 +1,24 @@
-# Project Plan & Next Steps
+1. **Analyze the Problem**:
+   The directory `src/components/resource-form/hooks` contains several duplicated and monolithic hook files:
+   - `useResourceForm.ts`
+   - `use-draft.ts`
+   - `use-form-draft.ts`
+   - `use-form-submit.ts`
+   - `use-resource-draft.ts`
+   - `use-resource-submit.ts`
 
-## 1. Quality Assurance
-- Set up unit testing framework (Jest + React Testing Library).
-- Write baseline tests for common UI components (`Button`, `Badge`, `Input`).
-- Set up basic CI actions for linting and testing.
+   These files violate the 50-line limit for functions and create cognitive overhead by mixing local storage, fetch execution, headers, and React state.
 
-## 2. Upcoming Features
-- **Export to Code**: Add a feature to generate fetch/axios code snippets for requests.
-- **OAuth Support**: Improve the auth management to natively support OAuth2 flows in the proxy.
-- **Dark Mode Support**: Ensure there's a seamless dark mode toggle.
+2. **Refactor Plan**:
+   - Standardize on `use-draft.ts`, `use-form-submit.ts`, and `useResourceForm.ts`.
+   - Delete `use-form-draft.ts`, `use-resource-draft.ts`, and `use-resource-submit.ts`.
+   - Decompose `useResourceForm` into an orchestrator that calls `useDraft` and `useFormSubmit`.
+   - Update `useDraft` to handle only local storage synchronization.
+   - Update `useFormSubmit` to handle fetch proxy requests and "copy as fetch" logic by creating simple `getHeaders` and `createFetchCode` functions.
+   - Run eslint and tests to ensure no regressions.
 
-## 3. Documentation
-- Document internal API proxy structure.
-- Add JSDoc comments to core parser components (`openapi-parser.ts`).
+3. **Pre-commit Instructions**:
+   - Complete pre-commit steps to ensure proper testing, verification, review, and reflection are done.
+
+4. **Submit**:
+   - Create PR with description conforming to Architect guidelines.
