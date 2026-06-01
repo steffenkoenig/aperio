@@ -14,7 +14,17 @@ export const getHeaders = (env: { authType?: string; authValue?: string; authHea
   if (Object.keys(formData).length > 0) headers['Content-Type'] = 'application/json';
   if (env.authType === 'bearer' && env.authValue) headers['Authorization'] = `Bearer ${env.authValue}`;
   else if (env.authType === 'apiKey' && env.authValue) headers[env.authHeader ?? 'X-API-Key'] = env.authValue;
-  else if (env.authType === 'basic' && env.authValue) headers['Authorization'] = `Basic ${btoa(env.authValue)}`;
+  else if (env.authType === 'basic' && env.authValue) {
+    try {
+      headers['Authorization'] = `Basic ${btoa(unescape(encodeURIComponent(env.authValue)))}`;
+    } catch {
+      try {
+        headers['Authorization'] = `Basic ${btoa(env.authValue)}`;
+      } catch {
+        headers['Authorization'] = `Basic ${env.authValue}`;
+      }
+    }
+  }
   return headers;
 };
 
@@ -48,10 +58,14 @@ export function useFormSubmit({ method, resolvedPath, draftKey, onSuccess }: Use
     const env = getActiveEnvironment();
     if (!env?.baseUrl) return toast.error('No base URL configured.');
     if (!navigator.clipboard) return toast.error('Clipboard API not available');
-    const fetchCode = createFetchCode(env.baseUrl, resolvedPath, method, getHeaders(env, formData), formData);
-    navigator.clipboard.writeText(fetchCode)
-      .then(() => toast.success('Fetch code copied to clipboard'))
-      .catch(() => toast.error('Failed to copy code to clipboard'));
+    try {
+      const fetchCode = createFetchCode(env.baseUrl, resolvedPath, method, getHeaders(env, formData), formData);
+      navigator.clipboard.writeText(fetchCode)
+        .then(() => toast.success('Fetch code copied to clipboard'))
+        .catch(() => toast.error('Failed to copy code to clipboard'));
+    } catch {
+      toast.error('Failed to generate or copy fetch code');
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent, formData: Record<string, unknown>) => {
@@ -70,7 +84,16 @@ export function useFormSubmit({ method, resolvedPath, draftKey, onSuccess }: Use
           body: Object.keys(formData).length > 0 ? formData : undefined,
         }),
       });
-      handleResponse(res, await res.json(), method, resolvedPath, draftKey, setResponse, setShowResponse, onSuccess);
+      
+      const text = await res.text();
+      let parsedData: unknown;
+      try {
+        parsedData = text ? JSON.parse(text) : { success: true };
+      } catch {
+        parsedData = { error: text || 'Invalid JSON response' };
+      }
+
+      handleResponse(res, parsedData, method, resolvedPath, draftKey, setResponse, setShowResponse, onSuccess);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Request failed');
     } finally {

@@ -13,7 +13,7 @@ export function useResourceForm({ path, method, resolvedPath, onSuccess }: UseRe
   const { parsedSpec } = useSpecStore();
   const draftKey = `draft_${parsedSpec?.title ?? 'default'}_${method.toUpperCase()}_${path}`;
 
-  const { formData, setFormData, handleDiscardDraft } = useDraft(draftKey);
+  const { formData, setFormData, handleDiscardDraft, clearDraft } = useDraft(draftKey);
 
   const {
     response,
@@ -26,7 +26,10 @@ export function useResourceForm({ path, method, resolvedPath, onSuccess }: UseRe
     method,
     resolvedPath,
     draftKey,
-    onSuccess,
+    onSuccess: (data) => {
+      clearDraft();
+      onSuccess?.(data);
+    },
   });
 
   const handleSubmit = (e: React.FormEvent) => baseHandleSubmit(e, formData);
@@ -40,6 +43,7 @@ export function useResourceForm({ path, method, resolvedPath, onSuccess }: UseRe
     showResponse,
     setShowResponse,
     handleDiscardDraft,
+    clearDraft,
     handleSubmit,
     copyAsFetch
   };

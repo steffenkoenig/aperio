@@ -18,8 +18,11 @@ export function useDraft(draftKey: string) {
       try {
         const draft = localStorage.getItem(draftKey);
         if (draft) {
-          setFormData(JSON.parse(draft) as Record<string, unknown>);
-          toast('Draft restored', { description: 'Your previous form data has been loaded.', duration: 3000 });
+          const parsed = JSON.parse(draft);
+          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            setFormData(parsed as Record<string, unknown>);
+            toast('Draft restored', { description: 'Your previous form data has been loaded.', duration: 3000 });
+          }
         }
       } catch {}
       setIsDraftLoaded(true);
@@ -41,11 +44,17 @@ export function useDraft(draftKey: string) {
     return () => clearTimeout(handler);
   }, [formData, isDraftLoaded, draftKey]);
 
-  const handleDiscardDraft = () => {
+  const clearDraft = () => {
     setFormData({});
-    try { localStorage.removeItem(draftKey); } catch {}
+    try {
+      localStorage.removeItem(draftKey);
+    } catch {}
+  };
+
+  const handleDiscardDraft = () => {
+    clearDraft();
     toast.success('Draft discarded');
   };
 
-  return { formData, setFormData, handleDiscardDraft };
+  return { formData, setFormData, handleDiscardDraft, clearDraft };
 }
