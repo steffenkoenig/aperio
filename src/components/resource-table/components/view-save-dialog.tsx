@@ -32,7 +32,9 @@ export function ResourceTableViewSaveDialog({
   const { saveView } = useSpecStore();
 
   const handleSave = () => {
-    const id = crypto.randomUUID();
+    const id = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     saveView({
       id,
       name: newViewName.trim(),

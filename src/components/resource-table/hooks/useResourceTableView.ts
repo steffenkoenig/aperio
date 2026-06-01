@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, ChangeEvent } from 'react';
 import { useSpecStore } from '@/store/spec-store';
 import { SortingState, VisibilityState } from '@tanstack/react-table';
 import { toast } from 'sonner';
@@ -12,7 +12,7 @@ export function useResourceTableView(path: string, activeViewId: string, setActi
     ? (preferences[specSource]?.savedViews || []).filter(v => v.resourcePath === path)
     : [];
 
-  const handleSelectView = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleSelectView = (e: ChangeEvent<HTMLSelectElement>) => {
     const id = e.target.value;
     setActiveViewId(id);
     if (id === 'default') {

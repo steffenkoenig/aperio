@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import {
   VisibilityState,
   SortingState,
@@ -27,7 +28,7 @@ export function useResourceTableInstance({
   columnVisibility,
   setColumnVisibility,
 }: UseResourceTableInstanceProps) {
-  const columns = inferColumns(data);
+  const columns = useMemo(() => inferColumns(data), [data]);
 
   const table = useReactTable({
     data,

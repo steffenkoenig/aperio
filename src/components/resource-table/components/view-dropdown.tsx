@@ -1,7 +1,9 @@
+import { ChangeEvent } from 'react';
+
 interface ResourceTableViewDropdownProps {
   activeViewId: string;
   savedViewsForPath: { id: string; name: string }[];
-  handleSelectView: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  handleSelectView: (e: ChangeEvent<HTMLSelectElement>) => void;
 }
 
 export function ResourceTableViewDropdown({
